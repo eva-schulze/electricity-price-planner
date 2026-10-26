@@ -100,6 +100,28 @@ const TEXTS = {
     bAvg: "Average",
     rest: "still to come",
     loading: "Loading prices…",
+    feedTitle: "Feed-in price",
+    highest: "Highest still to come",
+    bestBlock: (n) => `Best ${n} hours still to come`,
+    bHighest: "Highest",
+    bBestBlock: (n) => `Best ${n} h`,
+    bTrend: "Next price",
+    bNegative: "Negative prices",
+    none: "none",
+    applianceDefault: "Washing machine",
+    best: "best",
+    usageTitle: "Usage and price",
+    paid: "You paid on average",
+    dayAvg: "day average",
+    bestPossible: "best possible",
+    score: "Score",
+    great: "great timing",
+    good: "good",
+    ok: "could be better",
+    noUsage: "No usage data yet.",
+    chooseEnergy: "Choose an energy meter in the card settings.",
+    todaySoFar: "Today so far",
+    yesterday: "Yesterday",
     failed: (e) => `Could not load prices: ${e}`,
   },
   nl: {
@@ -123,6 +145,28 @@ const TEXTS = {
     bAvg: "Gemiddeld",
     rest: "nog te komen",
     loading: "Prijzen laden…",
+    feedTitle: "Terugleverprijs",
+    highest: "Hoogst nog te komen",
+    bestBlock: (n) => `Beste ${n} uur nog te komen`,
+    bHighest: "Hoogst",
+    bBestBlock: (n) => `Beste ${n} uur`,
+    bTrend: "Volgende prijs",
+    bNegative: "Negatieve prijzen",
+    none: "geen",
+    applianceDefault: "Wasmachine",
+    best: "beste",
+    usageTitle: "Verbruik en prijs",
+    paid: "Je betaalde gemiddeld",
+    dayAvg: "daggemiddelde",
+    bestPossible: "best mogelijk",
+    score: "Score",
+    great: "uitstekend getimed",
+    good: "goed",
+    ok: "kan beter",
+    noUsage: "Nog geen verbruiksgegevens.",
+    chooseEnergy: "Kies een energiemeter in de kaartinstellingen.",
+    todaySoFar: "Vandaag tot nu",
+    yesterday: "Gisteren",
     failed: (e) => `Prijzen konden niet worden geladen: ${e}`,
   },
   de: {
@@ -146,6 +190,28 @@ const TEXTS = {
     bAvg: "Durchschnitt",
     rest: "noch kommend",
     loading: "Preise werden geladen…",
+    feedTitle: "Einspeisepreis",
+    highest: "Am höchsten noch",
+    bestBlock: (n) => `Beste ${n} kommende Stunden`,
+    bHighest: "Am höchsten",
+    bBestBlock: (n) => `Beste ${n} Std.`,
+    bTrend: "Nächster Preis",
+    bNegative: "Negative Preise",
+    none: "keine",
+    applianceDefault: "Waschmaschine",
+    best: "am besten",
+    usageTitle: "Verbrauch und Preis",
+    paid: "Du hast im Schnitt bezahlt",
+    dayAvg: "Tagesschnitt",
+    bestPossible: "bestmöglich",
+    score: "Punktzahl",
+    great: "sehr gut getimt",
+    good: "gut",
+    ok: "geht besser",
+    noUsage: "Noch keine Verbrauchsdaten.",
+    chooseEnergy: "Wähle in den Karteneinstellungen einen Energiezähler.",
+    todaySoFar: "Heute bisher",
+    yesterday: "Gestern",
     failed: (e) => `Preise konnten nicht geladen werden: ${e}`,
   },
   fr: {
@@ -169,6 +235,28 @@ const TEXTS = {
     bAvg: "Moyenne",
     rest: "à venir",
     loading: "Chargement des prix…",
+    feedTitle: "Prix de réinjection",
+    highest: "Le plus élevé à venir",
+    bestBlock: (n) => `Les ${n} meilleures heures à venir`,
+    bHighest: "Le plus élevé",
+    bBestBlock: (n) => `${n} h les meilleures`,
+    bTrend: "Prix suivant",
+    bNegative: "Prix négatifs",
+    none: "aucun",
+    applianceDefault: "Lave-linge",
+    best: "idéal",
+    usageTitle: "Consommation et prix",
+    paid: "Vous avez payé en moyenne",
+    dayAvg: "moyenne du jour",
+    bestPossible: "meilleur possible",
+    score: "Score",
+    great: "excellent timing",
+    good: "bien",
+    ok: "peut mieux faire",
+    noUsage: "Pas encore de données de consommation.",
+    chooseEnergy: "Choisissez un compteur d’énergie dans les paramètres de la carte.",
+    todaySoFar: "Aujourd’hui jusqu’ici",
+    yesterday: "Hier",
     failed: (e) => `Impossible de charger les prix : ${e}`,
   },
   es: {
@@ -192,6 +280,28 @@ const TEXTS = {
     bAvg: "Media",
     rest: "por venir",
     loading: "Cargando precios…",
+    feedTitle: "Precio de vertido",
+    highest: "Más alto por venir",
+    bestBlock: (n) => `Las ${n} mejores horas por venir`,
+    bHighest: "Más alto",
+    bBestBlock: (n) => `${n} h mejores`,
+    bTrend: "Precio siguiente",
+    bNegative: "Precios negativos",
+    none: "ninguno",
+    applianceDefault: "Lavadora",
+    best: "mejor",
+    usageTitle: "Consumo y precio",
+    paid: "Pagaste de media",
+    dayAvg: "media del día",
+    bestPossible: "mejor posible",
+    score: "Puntuación",
+    great: "muy bien elegido",
+    good: "bien",
+    ok: "mejorable",
+    noUsage: "Aún no hay datos de consumo.",
+    chooseEnergy: "Elige un contador de energía en los ajustes de la tarjeta.",
+    todaySoFar: "Hoy hasta ahora",
+    yesterday: "Ayer",
     failed: (e) => `No se pudieron cargar los precios: ${e}`,
   },
 };
@@ -259,13 +369,16 @@ function weekday(d, hass) {
 // Price lists come in the formats of many integrations. Each entry needs a
 // start time and a price; the first field name that is present is used. Own
 // names can be set with time_key / price_key (a dot for nested fields).
-const TIME_KEYS = ["date.full", "start", "startsAt", "start_time", "from", "time", "timestamp", "datetime", "valid_from", "date"];
-const PRICE_KEYS = ["price", "value", "total", "value_inc_vat", "price_per_kwh", "electricity_price", "price_tax_included.amount"];
+const TIME_KEYS = ["date.full", "start", "startsAt", "start_time", "from", "time", "timestamp", "datetime", "valid_from", "hour", "date"];
+const PRICE_KEYS = ["price", "value", "total", "value_inc_vat", "price_per_kwh", "per_kwh", "electricity_price", "price_tax_included.amount"];
 // Attributes that hold a price list, tried in this order: Pure Energie Prices,
-// ENTSO-e and Frank Energie (prices), Nord Pool (raw_today / raw_tomorrow),
-// split lists (prices_today / prices_tomorrow), Octopus Energy (rates), EPEX
-// Spot (data), forecasts. Spanish PVPC is read separately (price_00h …).
-const LIST_ATTRIBUTES = [["prices"], ["raw_today", "raw_tomorrow"], ["prices_today", "prices_tomorrow"], ["rates"], ["data"], ["forecast"]];
+// ENTSO-e, Frank Energie, Rabot (prices); Nord Pool and Energi Data Service
+// (raw_today / raw_tomorrow); split lists (prices_today / prices_tomorrow);
+// Octopus Energy UK and Germany (rates); EPEX Spot and Tibber Prices (data);
+// Amber (forecasts); forecasts. Spanish PVPC is read separately (price_00h …).
+const LIST_ATTRIBUTES = [
+  ["prices"], ["raw_today", "raw_tomorrow"], ["prices_today", "prices_tomorrow"], ["rates"], ["data"], ["forecasts"], ["forecast"],
+];
 
 // Integrations that offer prices only through an action, with the unit their
 // prices come in.
@@ -277,7 +390,7 @@ const ACTION_SOURCES = {
 };
 
 const UNIT_FACTORS = { kwh: 1, cent: 0.01, mwh: 0.001 };
-const CURRENCIES = ["EUR", "GBP", "SEK", "NOK", "DKK", "CHF", "PLN", "CZK", "HUF", "RON", "BGN", "USD"];
+const CURRENCIES = ["EUR", "GBP", "SEK", "NOK", "DKK", "CHF", "PLN", "CZK", "HUF", "RON", "BGN", "AUD", "USD"];
 
 function pick(obj, path) {
   return String(path).split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj);
@@ -452,7 +565,7 @@ function readPrices(hass, state, c = {}, onUpdate) {
 // card that loaded.
 const SHARED_KEYS = [
   "entity", "palette", "color_steps", "color_low", "color_high", "currency", "price_unit", "price_factor",
-  "source", "attribute", "time_key", "price_key", "config_entry", "area", "incl_vat", "decimals",
+  "source", "attribute", "time_key", "price_key", "config_entry", "area", "incl_vat", "decimals", "mode",
 ];
 const sharedSettings = (window.__energyPriceSettings = window.__energyPriceSettings || { byKey: new Map(), last: null });
 
@@ -514,27 +627,48 @@ function priceDays(list) {
 }
 
 // The run of `hours` consecutive hours, starting after the current period,
-// with the lowest average price. Null when off or not enough data.
-function cheapestBlock(bars, nowSlot, hours, slotMin = 60) {
+// with the lowest average price (the highest with `opts.highest`, for feed-in
+// prices). With `opts.from` and `opts.until` (hours) the whole run must lie in
+// that daily window, for example from 22 until 7. Null when off or no data.
+function cheapestBlock(bars, nowSlot, hours, slotMin = 60, opts = {}) {
   const h = Math.min(Math.max(Math.round(Number(hours) || 0), 0), 12);
   if (h < 1) return null;
   const n = Math.round((h * 60) / slotMin);
   const bySlot = new Map(bars.map((b) => [b.i, b]));
+  const windowed = opts.from != null && opts.until != null && opts.from !== opts.until;
+  const inWindow = (t) => {
+    if (!windowed) return true;
+    const x = t.getHours();
+    return opts.from > opts.until ? x >= opts.from || x < opts.until : x >= opts.from && x < opts.until;
+  };
   let best = null;
   for (const b of bars) {
     if (b.i <= nowSlot) continue;
     let sum = 0, ok = true;
     for (let k = 0; k < n; k++) {
       const x = bySlot.get(b.i + k);
-      if (!x) { ok = false; break; }
+      if (!x || !inWindow(x.t)) { ok = false; break; }
       sum += x.price;
     }
-    if (ok && (!best || sum / n < best.avg)) {
-      best = { from: b.i, to: b.i + n - 1, start: b.t, end: new Date(b.t.getTime() + h * HOUR), avg: sum / n, hours: h };
+    const avg = sum / n;
+    if (ok && (!best || (opts.highest ? avg > best.avg : avg < best.avg))) {
+      best = { from: b.i, to: b.i + n - 1, start: b.t, end: new Date(b.t.getTime() + h * HOUR), avg, hours: h };
     }
   }
   return best;
 }
+
+function blockOpts(c) {
+  const opts = { highest: c.mode === "feed_in" };
+  if (c.block_window) {
+    opts.from = Number(c.block_from ?? 22);
+    opts.until = Number(c.block_until ?? 7);
+  }
+  return opts;
+}
+
+// Bars below zero get their own colour, apart from every palette.
+const NEGATIVE_COLOUR = "var(--purple-color, #8e44ad)";
 
 // Colour for a position f in the price range (0 = cheapest, 1 = most
 // expensive): `color_steps` equal bands across the chosen palette.
@@ -631,7 +765,7 @@ class PriceChartCard extends HTMLElement {
     const { start, slots, split, nowSlot, bars, slotMin, slotMs } = priceDays(list);
     this._bars = bars;
     this._slotMs = slotMs;
-    this._block = cheapestBlock(bars, nowSlot, this._config.block_hours, slotMin);
+    this._block = cheapestBlock(bars, nowSlot, this._config.block_hours, slotMin, blockOpts(this._config));
 
     let body;
     if (!isAction && !c.entity) {
@@ -650,7 +784,7 @@ class PriceChartCard extends HTMLElement {
     this._drawn = null;
 
     const custom = typeof this._config.title === "string" ? this._config.title.trim() : "";
-    const titleText = this._config.show_title === false ? "" : custom || t.title;
+    const titleText = this._config.show_title === false ? "" : custom || (this._config.mode === "feed_in" ? t.feedTitle : t.title);
     const title = titleText ? ` header="${esc(titleText)}"` : "";
     this.shadowRoot.innerHTML = `
       <style>
@@ -675,6 +809,8 @@ class PriceChartCard extends HTMLElement {
         .split { stroke: var(--secondary-text-color); stroke-dasharray: 3 3; }
         .night { fill: var(--primary-text-color); opacity: .12; }
         .block { stroke-width: 2.5; fill: none; }
+        .zero { stroke: var(--primary-text-color); stroke-width: 1; opacity: .55; }
+        .avg { stroke: var(--primary-text-color); stroke-width: 1.2; stroke-dasharray: 5 4; opacity: .7; }
         .past { opacity: .35; }
         .now { stroke: var(--primary-text-color); stroke-width: 1.5; }
         .sel { stroke: var(--primary-text-color); stroke-width: 2.5; opacity: 1; }
@@ -730,18 +866,22 @@ class PriceChartCard extends HTMLElement {
 
   _summary(bars, nowSlot) {
     const t = this._t || TEXTS.en;
+    const c = this._config;
+    const money = (v) => euro(v, c.decimals, language(this._hass), this._cur);
+    // For feed-in prices the best hour is the highest, not the cheapest.
+    const feed = c.mode === "feed_in";
     const parts = [];
     const now = bars.find((b) => b.i === nowSlot);
-    const d = this._config.decimals;
-    if (now && this._config.summary_now !== false) parts.push(`<span>${t.now} <b>${euro(now.price, d, language(this._hass), this._cur)}</b></span>`);
+    if (now && c.summary_now !== false) parts.push(`<span>${t.now} <b>${money(now.price)}</b></span>`);
     const ahead = bars.filter((b) => b.i > nowSlot);
-    if (ahead.length && this._config.summary_cheapest !== false) {
-      const best = ahead.reduce((a, b) => (b.price < a.price ? b : a));
-      parts.push(`<span>${t.cheapest} <b>${euro(best.price, d, language(this._hass), this._cur)}</b> ${t.at} <b>${this._day(best.t)} ${hh(best.t)}</b></span>`);
+    if (ahead.length && c.summary_cheapest !== false) {
+      const best = ahead.reduce((a, b) => ((feed ? b.price > a.price : b.price < a.price) ? b : a));
+      parts.push(`<span>${feed ? t.highest : t.cheapest} <b>${money(best.price)}</b> ${t.at} <b>${this._day(best.t)} ${hh(best.t)}</b></span>`);
     }
     const blk = this._block;
-    if (blk && this._config.summary_block !== false) {
-      parts.push(`<span>${t.block(blk.hours)}: <b>${this._day(blk.start)} ${hh(blk.start)}–${hh(blk.end)}</b>, ${t.avg} <b>${euro(blk.avg, d, language(this._hass), this._cur)}</b></span>`);
+    if (blk && c.summary_block !== false) {
+      const head = (feed ? t.bestBlock : t.block)(blk.hours);
+      parts.push(`<span>${head}: <b>${this._day(blk.start)} ${hh(blk.start)}–${hh(blk.end)}</b>, ${t.avg} <b>${money(blk.avg)}</b></span>`);
     }
     return parts.length ? `<div class="summary">${parts.join("")}</div>` : "";
   }
@@ -768,7 +908,9 @@ class PriceChartCard extends HTMLElement {
     const t = this._t || TEXTS.en;
     const { bars, slots, split, nowSlot, start, slotMin, slotMs } = this._ctx;
     const k = this._k;
-    const L = 38 * k, R = 4, T = 10, B = 20 * k;
+    // Compact: only the bars, no price or hour labels.
+    const compact = this._config.compact === true;
+    const L = compact ? 4 : 38 * k, R = 4, T = compact ? 6 : 10, B = compact ? 4 : 20 * k;
     const pw = W - L - R, ph = H - T - B, bw = pw / slots;
     const values = bars.map((b) => b.price);
     const min = Math.min(...values), max = Math.max(...values);
@@ -814,8 +956,10 @@ class PriceChartCard extends HTMLElement {
     for (let n = 0; n <= lines; n++) {
       const v = lo + n * step;
       svg += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`;
-      svg += `<text x="${L - 4}" y="${y(v) + 4 * k}" text-anchor="end">${num(v, 2, language(this._hass), this._cur)}</text>`;
+      if (!compact) svg += `<text x="${L - 4}" y="${y(v) + 4 * k}" text-anchor="end">${num(v, 2, language(this._hass))}</text>`;
     }
+    // A stronger line at zero when prices go below it.
+    if (lo < 0) svg += `<line class="zero" x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}"/>`;
 
     // Lines sit on hour boundaries, at the left edge of the bar that hour
     // starts: a tick at every hour; at every labelled hour a longer tick, the
@@ -831,19 +975,34 @@ class PriceChartCard extends HTMLElement {
       const cx = L + i * bw;
       const major = h % every === 0;
       if (major && i !== split) svg += `<line class="guide" x1="${cx}" x2="${cx}" y1="${T}" y2="${T + ph}"/>`;
+      if (compact) continue;
       svg += `<line class="tick" x1="${cx}" x2="${cx}" y1="${T + ph}" y2="${T + ph + (major ? 4 : 2)}"/>`;
       if (major) svg += `<text x="${cx}" y="${H - 3}" text-anchor="middle">${h}</text>`;
     }
 
     for (const b of bars) {
-      const f = max > min ? (b.price - min) / (max - min) : 0.5;
+      // Feed-in: high prices are good, so the colours turn around.
+      let f = max > min ? (b.price - min) / (max - min) : 0.5;
+      if (this._config.mode === "feed_in") f = 1 - f;
+      const fill = b.price < 0 && this._config.highlight_negative !== false ? NEGATIVE_COLOUR : this._colour(f);
       const cls = [];
       if (b.i < nowSlot) cls.push("past");
       if (b.i === nowSlot) cls.push("now");
       const top = y(Math.max(b.price, 0)), bottom = y(Math.min(b.price, 0));
       // A 1 px gap between bars, unless they are too thin for it.
       const gap = bw >= 4 ? 1 : 0;
-      svg += `<rect class="${cls.join(" ")}" style="fill: ${esc(this._colour(f))}" data-bar="${b.i}" x="${L + b.i * bw + gap / 2}" y="${top}" width="${Math.max(bw - gap, 0.5)}" height="${Math.max(bottom - top, 0.5)}"/>`;
+      svg += `<rect class="${cls.join(" ")}" style="fill: ${esc(fill)}" data-bar="${b.i}" x="${L + b.i * bw + gap / 2}" y="${top}" width="${Math.max(bw - gap, 0.5)}" height="${Math.max(bottom - top, 0.5)}"/>`;
+    }
+
+    // Optional: a dashed line at each day's average price.
+    if (this._config.show_average) {
+      for (const [a0, a1] of [[0, split], [split, slots]]) {
+        const day = bars.filter((b) => b.i >= a0 && b.i < a1);
+        if (!day.length) continue;
+        const avg = day.reduce((sum, b) => sum + b.price, 0) / day.length;
+        svg += `<line class="avg" x1="${L + a0 * bw}" x2="${L + a1 * bw}" y1="${y(avg)}" y2="${y(avg)}"/>`;
+        if (!compact) svg += `<text class="avgtext" x="${L + a1 * bw - 3}" y="${y(avg) - 3}" text-anchor="end">⌀ ${num(avg, 2, language(this._hass))}</text>`;
+      }
     }
 
     // The cheapest block: a bracket just above its tallest bar.
@@ -861,7 +1020,7 @@ class PriceChartCard extends HTMLElement {
     // A dashed line where tomorrow starts.
     const sx = L + split * bw;
     svg += `<line class="split" x1="${sx}" x2="${sx}" y1="${T}" y2="${T + ph}"/>`;
-    svg += `<text x="${sx + 3}" y="${T + 10 * k}">${t.tomorrow}</text>`;
+    if (!compact) svg += `<text x="${sx + 3}" y="${T + 10 * k}">${t.tomorrow}</text>`;
 
     return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t.title)}">${svg}</svg>`;
   }
@@ -880,6 +1039,22 @@ const EDITOR_TEXTS = {
       price_key: "Field with the price",
       price_factor: "Multiply prices by",
       advanced: "Advanced settings",
+      mode: "Prices shown",
+      sec_text: "Text",
+      sec_chart: "Chart",
+      sec_colours: "Colours",
+      sec_block: "Cheapest block",
+      compact: "Compact (no axes)",
+      show_average: "Average line",
+      highlight_negative: "Highlight negative prices",
+      block_window: "Only within set hours",
+      block_from: "Earliest start (hour)",
+      block_until: "Finished by (hour)",
+      appliance_kwh: "Energy per run",
+      appliance_hours: "Duration (hours)",
+      energy_entity: "Energy meter",
+      day: "Day",
+      show_score: "Show score",
       source: "Where the prices come from",
       config_entry: "Integration entry",
       area: "Area or home",
@@ -913,6 +1088,16 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "The sensor of your price integration that carries the price list (for Pure Energie Prices: not the “raw” or “percentile” sensors).",
       title: "Leave empty for the default title.",
+      mode: "Feed-in: high prices are good, so the colours turn around and the card looks for the highest prices.",
+      compact: "Only the bars, without price and hour labels. For small cards.",
+      show_average: "A dashed line at each day's average price.",
+      highlight_negative: "Bars below zero get their own colour (purple).",
+      block_window: "For example from 22 until 7: the block must start and finish between 22:00 and 07:00.",
+      appliance_kwh: "How much energy one run uses, for example 1 kWh for a washing machine at 40 °C.",
+      appliance_hours: "How long one run takes. The badge shows the cost now and at the cheapest start.",
+      energy_entity: "A sensor that counts your electricity use in kWh, for example the one in the Energy dashboard.",
+      day: "Yesterday needs the price sensor's history: it works with sensors, not with actions.",
+      show_score: "100 = all use in the cheapest hour of the day, 0 = all in the most expensive one.",
       source: "Most integrations keep the prices in the sensor. EnergyZero, easyEnergy, the built-in Nord Pool and Tibber only offer them through an action; choose them here.",
       config_entry: "The set-up integration that is asked for the prices.",
       area: "Nord Pool: the price area, for example NL or SE3 (empty: the first one). Tibber: the name of the home (empty: the first home).",
@@ -939,6 +1124,8 @@ const EDITOR_TEXTS = {
       grey: "Simple modern grey scale",
       custom: "Custom",
     },
+    modes: { purchase: "Purchase price", feed_in: "Feed-in price" },
+    days: { today: "Today so far", yesterday: "Yesterday" },
     units: { auto: "Automatic", kwh: "Per kWh (for example €/kWh)", cent: "Cents per kWh (ct, p, öre)", mwh: "Per MWh" },
     sources: { attribute: "Sensor (most integrations)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (built-in)", tibber: "Tibber" },
   },
@@ -951,6 +1138,22 @@ const EDITOR_TEXTS = {
       price_key: "Veld met de prijs",
       price_factor: "Prijzen vermenigvuldigen met",
       advanced: "Geavanceerde instellingen",
+      mode: "Getoonde prijzen",
+      sec_text: "Tekst",
+      sec_chart: "Grafiek",
+      sec_colours: "Kleuren",
+      sec_block: "Goedkoopste blok",
+      compact: "Compact (zonder assen)",
+      show_average: "Gemiddelde-lijn",
+      highlight_negative: "Negatieve prijzen markeren",
+      block_window: "Alleen binnen vaste uren",
+      block_from: "Vroegste start (uur)",
+      block_until: "Klaar om (uur)",
+      appliance_kwh: "Energie per keer",
+      appliance_hours: "Duur (uren)",
+      energy_entity: "Energiemeter",
+      day: "Dag",
+      show_score: "Score tonen",
       source: "Waar de prijzen vandaan komen",
       config_entry: "Integratie-item",
       area: "Gebied of woning",
@@ -984,6 +1187,16 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "De sensor van je prijsintegratie met de prijslijst (bij Pure Energie Prices: niet de “raw”- of “percentile”-sensoren).",
       title: "Laat leeg voor de standaardtitel.",
+      mode: "Teruglevering: hoge prijzen zijn gunstig, dus de kleuren draaien om en de kaart zoekt de hoogste prijzen.",
+      compact: "Alleen de balken, zonder prijs- en uurlabels. Voor kleine kaarten.",
+      show_average: "Een stippellijn op de gemiddelde prijs van elke dag.",
+      highlight_negative: "Balken onder nul krijgen een eigen kleur (paars).",
+      block_window: "Bijvoorbeeld van 22 tot 7: het blok moet tussen 22:00 en 07:00 beginnen en klaar zijn.",
+      appliance_kwh: "Hoeveel energie één keer gebruikt, bijvoorbeeld 1 kWh voor een wasmachine op 40 °C.",
+      appliance_hours: "Hoe lang één keer duurt. De badge toont de kosten nu en bij de goedkoopste start.",
+      energy_entity: "Een sensor die je stroomverbruik in kWh telt, bijvoorbeeld die van het Energie-dashboard.",
+      day: "Gisteren heeft de geschiedenis van de prijssensor nodig: werkt met sensoren, niet met acties.",
+      show_score: "100 = al het verbruik in het goedkoopste uur van de dag, 0 = alles in het duurste.",
       source: "De meeste integraties houden de prijzen in de sensor bij. EnergyZero, easyEnergy, de ingebouwde Nord Pool en Tibber bieden ze alleen via een actie aan; kies die hier.",
       config_entry: "De ingestelde integratie die om de prijzen wordt gevraagd.",
       area: "Nord Pool: het prijsgebied, bijvoorbeeld NL of SE3 (leeg: het eerste). Tibber: de naam van de woning (leeg: de eerste woning).",
@@ -1010,6 +1223,8 @@ const EDITOR_TEXTS = {
       grey: "Eenvoudige moderne grijstinten",
       custom: "Eigen kleuren",
     },
+    modes: { purchase: "Inkoopprijs", feed_in: "Terugleverprijs" },
+    days: { today: "Vandaag tot nu", yesterday: "Gisteren" },
     units: { auto: "Automatisch", kwh: "Per kWh (bijvoorbeeld €/kWh)", cent: "Centen per kWh (ct, p, öre)", mwh: "Per MWh" },
     sources: { attribute: "Sensor (de meeste integraties)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (ingebouwd)", tibber: "Tibber" },
   },
@@ -1022,6 +1237,22 @@ const EDITOR_TEXTS = {
       price_key: "Feld mit dem Preis",
       price_factor: "Preise multiplizieren mit",
       advanced: "Erweiterte Einstellungen",
+      mode: "Angezeigte Preise",
+      sec_text: "Text",
+      sec_chart: "Diagramm",
+      sec_colours: "Farben",
+      sec_block: "Günstigster Block",
+      compact: "Kompakt (ohne Achsen)",
+      show_average: "Durchschnittslinie",
+      highlight_negative: "Negative Preise hervorheben",
+      block_window: "Nur in festen Stunden",
+      block_from: "Frühester Start (Stunde)",
+      block_until: "Fertig bis (Stunde)",
+      appliance_kwh: "Energie pro Durchlauf",
+      appliance_hours: "Dauer (Stunden)",
+      energy_entity: "Energiezähler",
+      day: "Tag",
+      show_score: "Punktzahl anzeigen",
       source: "Woher die Preise kommen",
       config_entry: "Integrationseintrag",
       area: "Gebiet oder Zuhause",
@@ -1055,6 +1286,16 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "Der Sensor deiner Preisintegration mit der Preisliste (bei Pure Energie Prices: nicht die „raw“- oder „percentile“-Sensoren).",
       title: "Leer lassen für den Standardtitel.",
+      mode: "Einspeisung: hohe Preise sind gut, die Farben drehen sich um und die Karte sucht die höchsten Preise.",
+      compact: "Nur die Balken, ohne Preis- und Stundenbeschriftung. Für kleine Karten.",
+      show_average: "Eine gestrichelte Linie beim Durchschnittspreis jedes Tages.",
+      highlight_negative: "Balken unter null bekommen eine eigene Farbe (lila).",
+      block_window: "Zum Beispiel von 22 bis 7: Der Block muss zwischen 22:00 und 07:00 beginnen und fertig sein.",
+      appliance_kwh: "Wie viel Energie ein Durchlauf braucht, zum Beispiel 1 kWh für eine Waschmaschine bei 40 °C.",
+      appliance_hours: "Wie lange ein Durchlauf dauert. Das Badge zeigt die Kosten jetzt und beim günstigsten Start.",
+      energy_entity: "Ein Sensor, der deinen Stromverbrauch in kWh zählt, zum Beispiel der aus dem Energie-Dashboard.",
+      day: "Gestern braucht den Verlauf des Preissensors: geht mit Sensoren, nicht mit Aktionen.",
+      show_score: "100 = der ganze Verbrauch in der günstigsten Stunde des Tages, 0 = alles in der teuersten.",
       source: "Die meisten Integrationen halten die Preise im Sensor. EnergyZero, easyEnergy, das eingebaute Nord Pool und Tibber bieten sie nur über eine Aktion an; hier auswählen.",
       config_entry: "Die eingerichtete Integration, die nach den Preisen gefragt wird.",
       area: "Nord Pool: das Preisgebiet, zum Beispiel DE-LU oder AT (leer: das erste). Tibber: der Name des Zuhauses (leer: das erste).",
@@ -1081,6 +1322,8 @@ const EDITOR_TEXTS = {
       grey: "Schlichte moderne Graustufen",
       custom: "Eigene Farben",
     },
+    modes: { purchase: "Bezugspreis", feed_in: "Einspeisepreis" },
+    days: { today: "Heute bisher", yesterday: "Gestern" },
     units: { auto: "Automatisch", kwh: "Pro kWh (zum Beispiel €/kWh)", cent: "Cent pro kWh (ct, p, öre)", mwh: "Pro MWh" },
     sources: { attribute: "Sensor (die meisten Integrationen)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (eingebaut)", tibber: "Tibber" },
   },
@@ -1093,6 +1336,22 @@ const EDITOR_TEXTS = {
       price_key: "Champ du prix",
       price_factor: "Multiplier les prix par",
       advanced: "Paramètres avancés",
+      mode: "Prix affichés",
+      sec_text: "Texte",
+      sec_chart: "Graphique",
+      sec_colours: "Couleurs",
+      sec_block: "Bloc le moins cher",
+      compact: "Compact (sans axes)",
+      show_average: "Ligne de moyenne",
+      highlight_negative: "Mettre en évidence les prix négatifs",
+      block_window: "Seulement entre des heures fixes",
+      block_from: "Début au plus tôt (heure)",
+      block_until: "Terminé à (heure)",
+      appliance_kwh: "Énergie par cycle",
+      appliance_hours: "Durée (heures)",
+      energy_entity: "Compteur d’énergie",
+      day: "Jour",
+      show_score: "Afficher le score",
       source: "Provenance des prix",
       config_entry: "Entrée de l’intégration",
       area: "Zone ou logement",
@@ -1126,6 +1385,16 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "Le capteur de votre intégration de prix qui contient la liste des prix (pour Pure Energie Prices : pas les capteurs « raw » ou « percentile »).",
       title: "Laissez vide pour le titre par défaut.",
+      mode: "Réinjection : les prix élevés sont favorables ; les couleurs s’inversent et la carte cherche les prix les plus élevés.",
+      compact: "Seulement les barres, sans libellés de prix ni d’heures. Pour les petites cartes.",
+      show_average: "Une ligne pointillée au prix moyen de chaque jour.",
+      highlight_negative: "Les barres sous zéro ont leur propre couleur (violet).",
+      block_window: "Par exemple de 22 à 7 : le bloc doit commencer et finir entre 22:00 et 07:00.",
+      appliance_kwh: "L’énergie consommée par cycle, par exemple 1 kWh pour un lave-linge à 40 °C.",
+      appliance_hours: "La durée d’un cycle. Le badge affiche le coût maintenant et au départ le moins cher.",
+      energy_entity: "Un capteur qui compte votre consommation en kWh, par exemple celui du tableau de bord Énergie.",
+      day: "Hier nécessite l’historique du capteur de prix : fonctionne avec les capteurs, pas avec les actions.",
+      show_score: "100 = toute la consommation à l’heure la moins chère du jour, 0 = tout à la plus chère.",
       source: "La plupart des intégrations gardent les prix dans le capteur. EnergyZero, easyEnergy, Nord Pool intégré et Tibber ne les proposent que via une action ; choisissez-les ici.",
       config_entry: "L’intégration configurée à laquelle les prix sont demandés.",
       area: "Nord Pool : la zone de prix, par exemple FR ou SE3 (vide : la première). Tibber : le nom du logement (vide : le premier).",
@@ -1152,6 +1421,8 @@ const EDITOR_TEXTS = {
       grey: "Niveaux de gris simples et modernes",
       custom: "Couleurs personnalisées",
     },
+    modes: { purchase: "Prix d’achat", feed_in: "Prix de réinjection" },
+    days: { today: "Aujourd’hui jusqu’ici", yesterday: "Hier" },
     units: { auto: "Automatique", kwh: "Par kWh (par exemple €/kWh)", cent: "Centimes par kWh (ct, p, öre)", mwh: "Par MWh" },
     sources: { attribute: "Capteur (la plupart des intégrations)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (intégré)", tibber: "Tibber" },
   },
@@ -1164,6 +1435,22 @@ const EDITOR_TEXTS = {
       price_key: "Campo con el precio",
       price_factor: "Multiplicar los precios por",
       advanced: "Ajustes avanzados",
+      mode: "Precios mostrados",
+      sec_text: "Texto",
+      sec_chart: "Gráfico",
+      sec_colours: "Colores",
+      sec_block: "Bloque más barato",
+      compact: "Compacto (sin ejes)",
+      show_average: "Línea de media",
+      highlight_negative: "Resaltar precios negativos",
+      block_window: "Solo entre horas fijas",
+      block_from: "Inicio más temprano (hora)",
+      block_until: "Terminado a las (hora)",
+      appliance_kwh: "Energía por uso",
+      appliance_hours: "Duración (horas)",
+      energy_entity: "Contador de energía",
+      day: "Día",
+      show_score: "Mostrar puntuación",
       source: "De dónde vienen los precios",
       config_entry: "Entrada de la integración",
       area: "Zona o vivienda",
@@ -1197,6 +1484,16 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "El sensor de tu integración de precios con la lista de precios (en Pure Energie Prices: no los sensores «raw» ni «percentile»).",
       title: "Déjalo vacío para el título predeterminado.",
+      mode: "Vertido: los precios altos son buenos, así que los colores se invierten y la tarjeta busca los precios más altos.",
+      compact: "Solo las barras, sin etiquetas de precio ni de hora. Para tarjetas pequeñas.",
+      show_average: "Una línea discontinua en el precio medio de cada día.",
+      highlight_negative: "Las barras bajo cero tienen su propio color (morado).",
+      block_window: "Por ejemplo de 22 a 7: el bloque debe empezar y terminar entre las 22:00 y las 07:00.",
+      appliance_kwh: "La energía de un uso, por ejemplo 1 kWh para una lavadora a 40 °C.",
+      appliance_hours: "Lo que dura un uso. La insignia muestra el coste ahora y en el inicio más barato.",
+      energy_entity: "Un sensor que cuenta tu consumo de electricidad en kWh, por ejemplo el del panel de Energía.",
+      day: "Ayer necesita el historial del sensor de precio: funciona con sensores, no con acciones.",
+      show_score: "100 = todo el consumo en la hora más barata del día, 0 = todo en la más cara.",
       source: "La mayoría de las integraciones guardan los precios en el sensor. EnergyZero, easyEnergy, Nord Pool integrado y Tibber solo los ofrecen mediante una acción; elígelos aquí.",
       config_entry: "La integración configurada a la que se piden los precios.",
       area: "Nord Pool: la zona de precios, por ejemplo ES o SE3 (vacío: la primera). Tibber: el nombre de la vivienda (vacío: la primera).",
@@ -1223,6 +1520,8 @@ const EDITOR_TEXTS = {
       grey: "Escala de grises sencilla y moderna",
       custom: "Colores propios",
     },
+    modes: { purchase: "Precio de compra", feed_in: "Precio de vertido" },
+    days: { today: "Hoy hasta ahora", yesterday: "Ayer" },
     units: { auto: "Automático", kwh: "Por kWh (por ejemplo €/kWh)", cent: "Céntimos por kWh (ct, p, öre)", mwh: "Por MWh" },
     sources: { attribute: "Sensor (la mayoría de integraciones)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (integrado)", tibber: "Tibber" },
   },
@@ -1285,40 +1584,63 @@ function advancedSection(tx, c, lang, extra = []) {
   return { type: "expandable", name: "advanced", title: tx.labels.advanced, flatten: true, schema: fields };
 }
 
+// A folding section of the form.
+const section = (name, tx, schema) => ({ type: "expandable", name, title: tx.labels[name], flatten: true, schema });
+
+// The card form: the essentials on top, the rest in folding sections, so the
+// form stays short. Fields that depend on another setting only appear when
+// that setting needs them.
 function editorSchema(tx, c, lang) {
-  const schema = [];
-  if (!ACTION_SOURCES[c.source]) schema.push({ name: "entity", required: true, selector: { entity: { domain: "sensor" } } });
-  schema.push({ name: "show_title", selector: { boolean: {} } });
-  if (c.show_title !== false) schema.push({ name: "title", selector: { text: {} } });
-  schema.push({ name: "show_summary", selector: { boolean: {} } });
+  const top = [];
+  if (!ACTION_SOURCES[c.source]) top.push({ name: "entity", required: true, selector: { entity: { domain: "sensor" } } });
+  top.push({ name: "mode", selector: choice(tx.modes) }, { name: "show_title", selector: { boolean: {} } });
+  if (c.show_title !== false) top.push({ name: "title", selector: { text: {} } });
+
+  const text = [{ name: "show_summary", selector: { boolean: {} } }];
   if (c.show_summary !== false) {
-    schema.push({ name: "summary_now", selector: { boolean: {} } }, { name: "summary_cheapest", selector: { boolean: {} } });
+    text.push({ name: "summary_now", selector: { boolean: {} } }, { name: "summary_cheapest", selector: { boolean: {} } });
   }
-  schema.push(
-    { name: "show_info", selector: { boolean: {} } },
+  text.push({ name: "show_info", selector: { boolean: {} } });
+
+  const chart = [
     { name: "height", selector: num_(80, 600, 10, "px") },
-    { name: "fixed_scale", selector: { boolean: {} } }
+    { name: "compact", selector: { boolean: {} } },
+    { name: "fixed_scale", selector: { boolean: {} } },
+  ];
+  if (c.fixed_scale) chart.push({ name: "y_max", selector: num_(0.05, 100, 0.01, "/kWh") });
+  chart.push(
+    { name: "show_average", selector: { boolean: {} } },
+    { name: "highlight_negative", selector: { boolean: {} } },
+    { name: "night_shading", selector: { boolean: {} } }
   );
-  if (c.fixed_scale) schema.push({ name: "y_max", selector: num_(0.05, 100, 0.01, "/kWh") });
-  schema.push({ name: "palette", selector: choice(tx.palettes) });
-  if (c.palette === "custom") schema.push(colourPair());
-  schema.push({ name: "color_steps", selector: num_(2, 6, 1) }, { name: "block_hours", selector: num_(0, 12, 1) });
-  if (Number(c.block_hours) > 0) {
-    if (c.show_summary !== false) schema.push({ name: "summary_block", selector: { boolean: {} } });
-    schema.push({ name: "block_color_custom", selector: { boolean: {} } });
-    if (c.block_color_custom) schema.push({ name: "block_color", selector: { color_rgb: {} } });
-  }
-  schema.push({ name: "night_shading", selector: { boolean: {} } });
   if (c.night_shading !== false) {
-    schema.push(pair({ name: "night_start", selector: num_(0, 23, 1) }, { name: "night_end", selector: num_(0, 23, 1) }));
+    chart.push(pair({ name: "night_start", selector: num_(0, 23, 1) }, { name: "night_end", selector: num_(0, 23, 1) }));
   }
-  schema.push(
+
+  const colours = [{ name: "palette", selector: choice(tx.palettes) }];
+  if (c.palette === "custom") colours.push(colourPair());
+  colours.push({ name: "color_steps", selector: num_(2, 6, 1) });
+
+  const block = [{ name: "block_hours", selector: num_(0, 12, 1) }];
+  if (Number(c.block_hours) > 0) {
+    if (c.show_summary !== false) block.push({ name: "summary_block", selector: { boolean: {} } });
+    block.push({ name: "block_window", selector: { boolean: {} } });
+    if (c.block_window) block.push(pair({ name: "block_from", selector: num_(0, 23, 1) }, { name: "block_until", selector: num_(0, 23, 1) }));
+    block.push({ name: "block_color_custom", selector: { boolean: {} } });
+    if (c.block_color_custom) block.push({ name: "block_color", selector: { color_rgb: {} } });
+  }
+
+  return [
+    ...top,
+    section("sec_text", tx, text),
+    section("sec_chart", tx, chart),
+    section("sec_colours", tx, colours),
+    section("sec_block", tx, block),
     advancedSection(tx, c, lang, [
       { name: "decimals", selector: num_(0, 4, 1) },
       { name: "font_size", selector: num_(10, 24, 1, "px") },
-    ])
-  );
-  return schema;
+    ]),
+  ];
 }
 
 // Drop settings that belong to another data source, so switching source
@@ -1392,6 +1714,13 @@ class PriceChartCardEditor extends FormEditor {
       night_shading: true,
       night_start: 22,
       night_end: 6,
+      mode: "purchase",
+      compact: false,
+      show_average: false,
+      highlight_negative: true,
+      block_window: false,
+      block_from: 22,
+      block_until: 7,
       source: "attribute",
       price_unit: "auto",
       currency: "auto",
@@ -1412,6 +1741,8 @@ class PriceChartCardEditor extends FormEditor {
   // from the current palette.
   normalize(c) {
     cleanSource(c);
+    if (!c.block_window) { delete c.block_from; delete c.block_until; }
+    if (c.mode === "purchase") delete c.mode;
     if (c.fixed_scale && c.y_max == null) c.y_max = 0.4;
     if (c.palette === "custom") {
       if (c.color_low == null) c.color_low = CUSTOM_LOW_RGB;
@@ -1427,10 +1758,14 @@ class PriceChartCardEditor extends FormEditor {
 // still to come, the cheapest block, or the price at a chosen hour.
 const BADGE_ICONS = {
   now: "mdi:flash",
-  cheapest: "mdi:arrow-down-bold-circle-outline",
-  block: "mdi:timer-sand",
+  trend: "mdi:trending-neutral",
   at: "mdi:clock-outline",
+  cheapest: "mdi:arrow-down-bold-circle-outline",
+  highest: "mdi:arrow-up-bold-circle-outline",
   average: "mdi:approximately-equal",
+  block: "mdi:timer-sand",
+  negative: "mdi:minus-circle-outline",
+  appliance: "mdi:washing-machine",
 };
 
 class PriceBadge extends HTMLElement {
@@ -1488,27 +1823,79 @@ class PriceBadge extends HTMLElement {
     );
     const rangeLabel = t.ranges[range] ? ` ${t.ranges[range]}` : "";
 
-    if (c.show === "cheapest") {
-      label = t.bCheapest + rangeLabel;
+    const lang = language(this._hass);
+    const money = (v) => euro(v, d, lang, this._cur);
+    const when = (time) => `${day(time)} ${hh(time)}`;
+    const total = (list) => list.reduce((sum, b) => sum + b.price, 0);
+    let trendIcon = null;
+
+    if (c.show === "cheapest" || c.show === "highest") {
+      const high = c.show === "highest";
+      label = (high ? t.bHighest : t.bCheapest) + rangeLabel;
       if (inRange.length) {
-        const best = inRange.reduce((a, b) => (b.price < a.price ? b : a));
-        label += ` · ${day(best.t)} ${hh(best.t)}`;
+        const best = inRange.reduce((a, b) => ((high ? b.price > a.price : b.price < a.price) ? b : a));
+        label += ` · ${when(best.t)}`;
         price = best.price;
-        value = euro(price, d, language(this._hass), this._cur);
+        value = money(price);
       }
     } else if (c.show === "block") {
-      const blk = cheapestBlock(inRange, range === "upcoming" ? nowSlot : -1, c.block_hours || 3, slotMin);
-      label = t.bBlock(blk ? blk.hours : Math.round(Number(c.block_hours) || 3)) + rangeLabel;
+      const feed = c.mode === "feed_in";
+      const blk = cheapestBlock(inRange, range === "upcoming" ? nowSlot : -1, c.block_hours || 3, slotMin, blockOpts(c));
+      label = (feed ? t.bBestBlock : t.bBlock)(blk ? blk.hours : Math.round(Number(c.block_hours) || 3)) + rangeLabel;
       if (blk) {
         price = blk.avg;
-        value = `${day(blk.start)} ${hh(blk.start)}–${hh(blk.end)} · ${euro(price, d, language(this._hass), this._cur)}`;
+        value = `${when(blk.start)}–${hh(blk.end)} · ${money(price)}`;
       }
     } else if (c.show === "average") {
       label = `${t.bAvg} ${t.ranges[range] || t.rest}`;
       if (inRange.length) {
-        price = inRange.reduce((sum, b) => sum + b.price, 0) / inRange.length;
-        value = euro(price, d, language(this._hass), this._cur);
+        price = total(inRange) / inRange.length;
+        value = money(price);
       }
+    } else if (c.show === "negative") {
+      // How many hours have a price below zero, and the first such stretch.
+      label = t.bNegative + rangeLabel;
+      if (inRange.length) {
+        const neg = inRange.filter((b) => b.price < 0);
+        if (!neg.length) value = t.none;
+        else {
+          let last = neg[0];
+          for (const b of neg.slice(1)) {
+            if (b.i !== last.i + 1) break;
+            last = b;
+          }
+          const hours = (neg.length * slotMin) / 60;
+          price = Math.min(...neg.map((b) => b.price));
+          value = `${num(hours, hours % 1 ? 1 : 0, lang)} h · ${when(neg[0].t)}–${hh(new Date(last.t.getTime() + slotMin * 60000))}`;
+        }
+      }
+    } else if (c.show === "trend") {
+      // The next price period compared with the current one.
+      label = t.bTrend;
+      const now = bars.find((b) => b.i === nowSlot), next = bars.find((b) => b.i === nowSlot + 1);
+      if (now && next) {
+        const diff = next.price - now.price;
+        const arrow = Math.abs(diff) < 0.005 ? "→" : diff > 0 ? "↑" : "↓";
+        trendIcon = { "↑": "mdi:trending-up", "↓": "mdi:trending-down", "→": "mdi:trending-neutral" }[arrow];
+        label += ` · ${hh(next.t)}`;
+        price = next.price;
+        value = `${arrow} ${money(price)}`;
+      }
+    } else if (c.show === "appliance") {
+      // What one run costs if started now, and at the cheapest start.
+      const kwh = Number(c.appliance_kwh) > 0 ? Number(c.appliance_kwh) : 1;
+      const hours = Math.min(Math.max(Math.round(Number(c.appliance_hours) || 2), 1), 12);
+      const n = Math.round((hours * 60) / slotMin);
+      label = t.applianceDefault;
+      const nowRun = bars.filter((b) => b.i >= nowSlot && b.i < nowSlot + n);
+      const blk = cheapestBlock(bars, nowSlot, hours, slotMin, { ...blockOpts(c), highest: false });
+      const parts = [];
+      if (nowRun.length === n) parts.push(`${t.now} ${money((kwh * total(nowRun)) / n)}`);
+      if (blk) {
+        parts.push(`${t.best} ${when(blk.start)} ${money(kwh * blk.avg)}`);
+        price = blk.avg;
+      }
+      if (parts.length) value = parts.join(" · ");
     } else if (c.show === "at") {
       // The next time the clock shows this hour: today if it has not passed
       // yet (the current hour counts), otherwise tomorrow once it is known.
@@ -1546,7 +1933,7 @@ class PriceBadge extends HTMLElement {
       const min = Math.min(...values), max = Math.max(...values);
       colour = bandColour(c, max > min ? Math.min(Math.max((price - min) / (max - min), 0), 1) : 0.5);
     }
-    const icon = typeof c.icon === "string" && c.icon ? c.icon : BADGE_ICONS[c.show] || BADGE_ICONS.now;
+    const icon = typeof c.icon === "string" && c.icon ? c.icon : trendIcon || BADGE_ICONS[c.show] || BADGE_ICONS.now;
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -1581,7 +1968,7 @@ const BADGE_EDITOR_TEXTS = {
       palette: "Icon colours",
     },
     helpers: {
-      show: "The fields below change with this choice.",
+      show: "The fields below change with this choice. For the day's minimum or maximum, choose the cheapest hour or the highest price with “Today (whole day)”.",
       range: "Only the hours still to come, all of today, all of tomorrow, or both days. Tomorrow's prices usually arrive in the afternoon; until then the badge shows a dash.",
       block_hours: "1 to 12 consecutive hours, for example 3 for a washing machine programme. The badge shows when the block starts and ends, and its average price.",
       hour: "0 to 23. The badge shows the price for the next time the clock reaches this hour: today if it has not passed yet, otherwise tomorrow once that price is known. Example: 6 shows the price from 06:00 to 07:00.",
@@ -1596,10 +1983,14 @@ const BADGE_EDITOR_TEXTS = {
     },
     show: {
       now: "Price now",
-      cheapest: "Cheapest hour",
-      block: "Cheapest block of hours",
+      trend: "Next price (trend)",
       at: "Price at a set hour",
+      cheapest: "Cheapest hour",
+      highest: "Highest price",
       average: "Average price",
+      block: "Cheapest block of hours",
+      negative: "Negative prices",
+      appliance: "Cost of an appliance",
     },
     range: { upcoming: "Hours still to come", today: "Today (whole day)", tomorrow: "Tomorrow (whole day)", both: "Today and tomorrow" },
   },
@@ -1615,7 +2006,7 @@ const BADGE_EDITOR_TEXTS = {
       palette: "Kleuren van het pictogram",
     },
     helpers: {
-      show: "De velden hieronder passen zich aan deze keuze aan.",
+      show: "De velden hieronder passen zich aan deze keuze aan. Voor het minimum of maximum van de dag: kies het goedkoopste uur of de hoogste prijs met „Vandaag (hele dag)”.",
       range: "Alleen de uren die nog komen, heel vandaag, heel morgen of beide dagen. De prijzen van morgen komen meestal in de middag; tot dan toont de badge een streepje.",
       block_hours: "1 tot 12 aaneengesloten uren, bijvoorbeeld 3 voor een wasprogramma. De badge toont begin en einde van het blok en de gemiddelde prijs.",
       hour: "0 tot 23. De badge toont de prijs voor de eerstvolgende keer dat de klok dit uur bereikt: vandaag als het nog niet voorbij is, anders morgen zodra die prijs bekend is. Voorbeeld: 6 toont de prijs van 06:00 tot 07:00.",
@@ -1630,10 +2021,14 @@ const BADGE_EDITOR_TEXTS = {
     },
     show: {
       now: "Prijs nu",
-      cheapest: "Goedkoopste uur",
-      block: "Goedkoopste blok uren",
+      trend: "Volgende prijs (trend)",
       at: "Prijs op een vast uur",
+      cheapest: "Goedkoopste uur",
+      highest: "Hoogste prijs",
       average: "Gemiddelde prijs",
+      block: "Goedkoopste blok uren",
+      negative: "Negatieve prijzen",
+      appliance: "Kosten van een apparaat",
     },
     range: { upcoming: "Uren die nog komen", today: "Vandaag (hele dag)", tomorrow: "Morgen (hele dag)", both: "Vandaag en morgen" },
   },
@@ -1649,7 +2044,7 @@ const BADGE_EDITOR_TEXTS = {
       palette: "Farben des Symbols",
     },
     helpers: {
-      show: "Die Felder darunter passen sich dieser Auswahl an.",
+      show: "Die Felder darunter passen sich dieser Auswahl an. Für Minimum oder Maximum des Tages: günstigste Stunde oder höchsten Preis mit „Heute (ganzer Tag)“ wählen.",
       range: "Nur die kommenden Stunden, den ganzen heutigen Tag, den ganzen morgigen Tag oder beide Tage. Die Preise für morgen kommen meist am Nachmittag; bis dahin zeigt das Badge einen Strich.",
       block_hours: "1 bis 12 aufeinanderfolgende Stunden, zum Beispiel 3 für ein Waschprogramm. Das Badge zeigt Beginn und Ende des Blocks und den Durchschnittspreis.",
       hour: "0 bis 23. Das Badge zeigt den Preis für das nächste Mal, wenn die Uhr diese Stunde erreicht: heute, wenn sie noch nicht vorbei ist, sonst morgen, sobald der Preis bekannt ist. Beispiel: 6 zeigt den Preis von 06:00 bis 07:00.",
@@ -1664,10 +2059,14 @@ const BADGE_EDITOR_TEXTS = {
     },
     show: {
       now: "Preis jetzt",
-      cheapest: "Günstigste Stunde",
-      block: "Günstigster Stundenblock",
+      trend: "Nächster Preis (Trend)",
       at: "Preis zu einer festen Stunde",
+      cheapest: "Günstigste Stunde",
+      highest: "Höchster Preis",
       average: "Durchschnittspreis",
+      block: "Günstigster Stundenblock",
+      negative: "Negative Preise",
+      appliance: "Kosten eines Geräts",
     },
     range: { upcoming: "Kommende Stunden", today: "Heute (ganzer Tag)", tomorrow: "Morgen (ganzer Tag)", both: "Heute und morgen" },
   },
@@ -1683,7 +2082,7 @@ const BADGE_EDITOR_TEXTS = {
       palette: "Couleurs de l’icône",
     },
     helpers: {
-      show: "Les champs ci-dessous s’adaptent à ce choix.",
+      show: "Les champs ci-dessous s’adaptent à ce choix. Pour le minimum ou le maximum du jour : choisissez l’heure la moins chère ou le prix le plus élevé avec « Aujourd’hui (toute la journée) ».",
       range: "Seulement les heures à venir, toute la journée d’aujourd’hui, toute celle de demain, ou les deux. Les prix de demain arrivent en général l’après-midi ; d’ici là, le badge affiche un tiret.",
       block_hours: "1 à 12 heures consécutives, par exemple 3 pour un programme de lave-linge. Le badge affiche le début et la fin du bloc et son prix moyen.",
       hour: "0 à 23. Le badge affiche le prix pour la prochaine fois que l’horloge atteint cette heure : aujourd’hui si elle n’est pas encore passée, sinon demain dès que ce prix est connu. Exemple : 6 affiche le prix de 06:00 à 07:00.",
@@ -1698,10 +2097,14 @@ const BADGE_EDITOR_TEXTS = {
     },
     show: {
       now: "Prix actuel",
-      cheapest: "Heure la moins chère",
-      block: "Bloc d’heures le moins cher",
+      trend: "Prix suivant (tendance)",
       at: "Prix à une heure fixe",
+      cheapest: "Heure la moins chère",
+      highest: "Prix le plus élevé",
       average: "Prix moyen",
+      block: "Bloc d’heures le moins cher",
+      negative: "Prix négatifs",
+      appliance: "Coût d’un appareil",
     },
     range: { upcoming: "Heures à venir", today: "Aujourd’hui (toute la journée)", tomorrow: "Demain (toute la journée)", both: "Aujourd’hui et demain" },
   },
@@ -1717,7 +2120,7 @@ const BADGE_EDITOR_TEXTS = {
       palette: "Colores del icono",
     },
     helpers: {
-      show: "Los campos de abajo cambian según esta elección.",
+      show: "Los campos de abajo cambian según esta elección. Para el mínimo o el máximo del día: elige la hora más barata o el precio más alto con «Hoy (todo el día)».",
       range: "Solo las horas que quedan, todo el día de hoy, todo el de mañana o ambos días. Los precios de mañana suelen llegar por la tarde; hasta entonces la insignia muestra un guion.",
       block_hours: "De 1 a 12 horas seguidas, por ejemplo 3 para un programa de lavadora. La insignia muestra el inicio y el fin del bloque y su precio medio.",
       hour: "De 0 a 23. La insignia muestra el precio de la próxima vez que el reloj llegue a esta hora: hoy si aún no ha pasado, si no mañana en cuanto se conozca ese precio. Ejemplo: 6 muestra el precio de 06:00 a 07:00.",
@@ -1732,10 +2135,14 @@ const BADGE_EDITOR_TEXTS = {
     },
     show: {
       now: "Precio ahora",
-      cheapest: "Hora más barata",
-      block: "Bloque de horas más barato",
+      trend: "Precio siguiente (tendencia)",
       at: "Precio a una hora fija",
+      cheapest: "Hora más barata",
+      highest: "Precio más alto",
       average: "Precio medio",
+      block: "Bloque de horas más barato",
+      negative: "Precios negativos",
+      appliance: "Coste de un aparato",
     },
     range: { upcoming: "Horas por venir", today: "Hoy (todo el día)", tomorrow: "Mañana (todo el día)", both: "Hoy y mañana" },
   },
@@ -1758,6 +2165,12 @@ class PriceBadgeEditor extends FormEditor {
       range: "upcoming",
       block_hours: 3,
       hour: 6,
+      appliance_kwh: 1,
+      appliance_hours: 2,
+      block_window: false,
+      block_from: 22,
+      block_until: 7,
+      mode: "purchase",
       follow_chart: true,
       decimals: 2,
       palette: "traffic",
@@ -1778,7 +2191,14 @@ class PriceBadgeEditor extends FormEditor {
   schema(tx, c, lang) {
     const schema = [{ name: "show", selector: choice(tx.show) }];
     if (c.show === "block") schema.push({ name: "block_hours", selector: num_(1, 12, 1) });
-    if (c.show === "cheapest" || c.show === "block" || c.show === "average") schema.push({ name: "range", selector: choice(tx.range) });
+    if (c.show === "appliance") {
+      schema.push({ name: "appliance_kwh", selector: num_(0.1, 50, 0.1, "kWh") }, { name: "appliance_hours", selector: num_(1, 12, 1) });
+    }
+    if (["cheapest", "highest", "average", "block", "negative"].includes(c.show)) schema.push({ name: "range", selector: choice(tx.range) });
+    if (c.show === "block" || c.show === "appliance") {
+      schema.push({ name: "block_window", selector: { boolean: {} } });
+      if (c.block_window) schema.push(pair({ name: "block_from", selector: num_(0, 23, 1) }, { name: "block_until", selector: num_(0, 23, 1) }));
+    }
     if (c.show === "at") schema.push({ name: "hour", selector: num_(0, 23, 1) });
     if (!ACTION_SOURCES[c.source]) schema.push({ name: "entity", selector: { entity: { domain: "sensor" } } });
     schema.push(
@@ -1787,7 +2207,7 @@ class PriceBadgeEditor extends FormEditor {
       { name: "follow_chart", selector: { boolean: {} } }
     );
     if (c.follow_chart === false) {
-      schema.push({ name: "palette", selector: choice(tx.palettes) });
+      schema.push({ name: "mode", selector: choice(tx.modes) }, { name: "palette", selector: choice(tx.palettes) });
       if (c.palette === "custom") {
         schema.push({ name: "color_low", selector: { color_rgb: {} } }, { name: "color_high", selector: { color_rgb: {} } });
       }
@@ -1795,6 +2215,248 @@ class PriceBadgeEditor extends FormEditor {
         { name: "color_steps", selector: num_(2, 6, 1) },
         advancedSection(tx, c, lang, [{ name: "decimals", selector: num_(0, 4, 1) }])
       );
+    }
+    return schema;
+  }
+
+  normalize(c) {
+    cleanSource(c);
+    if (!c.block_window) { delete c.block_from; delete c.block_until; }
+    if (c.mode === "purchase") delete c.mode;
+    if (c.show !== "appliance") { delete c.appliance_kwh; delete c.appliance_hours; }
+    if (c.palette === "custom") {
+      if (c.color_low == null) c.color_low = CUSTOM_LOW_RGB;
+      if (c.color_high == null) c.color_high = CUSTOM_HIGH_RGB;
+    }
+    return c;
+  }
+}
+
+
+// Usage card: bars of your electricity use per hour, coloured by the price of
+// that hour, with an optional score for how well the use was timed. Prices
+// come from a price card on the dashboard (or its own settings); use comes
+// from the recorder's hourly statistics of an energy meter.
+class UsageCard extends HTMLElement {
+  static getConfigElement() {
+    return document.createElement("electricity-price-planner-usage-card-editor");
+  }
+
+  static getStubConfig(hass) {
+    const meter = Object.keys(hass.states).find(
+      (id) => id.startsWith("sensor.") && hass.states[id].attributes.device_class === "energy"
+    );
+    return { energy_entity: meter || "" };
+  }
+
+  setConfig(config) {
+    this._config = { day: "today", show_score: true, height: 160, decimals: 2, ...config };
+    this._key = null;
+    this._statsKey = null;
+    this._onPrices = this._onPrices || (() => { this._key = null; if (this._hass) this.hass = this._hass; });
+    if (this._hass) this.hass = this._hass;
+  }
+
+  connectedCallback() {
+    window.addEventListener("energy-price-settings", this._onPrices);
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener("energy-price-settings", this._onPrices);
+  }
+
+  getCardSize() {
+    return Math.ceil((Number(this._config.height) + 110) / 50);
+  }
+
+  getGridOptions() {
+    return { columns: 12, min_columns: 6, rows: "auto", min_rows: 4 };
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    const c = followedSettings(this._config);
+    const state = hass.states[c.entity];
+    const key = [state && state.last_updated, Math.floor(Date.now() / 900000), language(hass), this._statsVersion || 0].join("|");
+    if (key === this._key) return;
+    this._key = key;
+    this._render(c, state);
+  }
+
+  // Hourly statistics from the recorder: the energy meter's change per hour
+  // and, for yesterday, the price sensor's mean per hour. Fetched again after
+  // 15 minutes.
+  _stats(c, dayStart, dayEnd) {
+    const want = JSON.stringify([c.energy_entity, c.entity, c.day, dayStart.getTime()]);
+    const fresh = this._statsKey === want && Date.now() - this._statsTime < 15 * 60000;
+    if (!fresh && !this._statsLoading && this._hass.callWS) {
+      const ids = [c.energy_entity];
+      if (c.day === "yesterday" && c.entity) ids.push(c.entity);
+      this._statsKey = want;
+      this._statsTime = Date.now();
+      this._statsLoading = true;
+      this._hass
+        .callWS({
+          type: "recorder/statistics_during_period",
+          start_time: dayStart.toISOString(),
+          end_time: dayEnd.toISOString(),
+          statistic_ids: ids,
+          period: "hour",
+          types: ["change", "mean"],
+        })
+        .then((r) => { this._statsData = r || {}; this._statsError = null; })
+        .catch((e) => { this._statsError = (e && e.message) || String(e); })
+        .finally(() => { this._statsLoading = false; this._statsVersion = (this._statsVersion || 0) + 1; this._onPrices(); });
+    }
+    return this._statsData || {};
+  }
+
+  _render(c, state) {
+    if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+    const lang = language(this._hass);
+    const t = TEXTS[lang];
+    this._cur = currencyOf(c, state);
+    const money = (v) => euro(v, c.decimals, lang, this._cur);
+    const yesterday = c.day === "yesterday";
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    if (yesterday) dayStart.setDate(dayStart.getDate() - 1);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const hours = Math.round((dayEnd - dayStart) / HOUR);
+    const stats = c.energy_entity ? this._stats(c, dayStart, dayEnd) : {};
+    const slot = (time) => Math.round((time - dayStart) / HOUR);
+
+    // The price of each hour: today from the price list (quarter hours are
+    // averaged), yesterday from the price sensor's hourly statistics.
+    const hourPrice = new Map();
+    if (yesterday) {
+      const factor = unitFactor(c, state);
+      for (const r of stats[c.entity] || []) if (r.mean != null) hourPrice.set(slot(new Date(r.start)), r.mean * factor);
+    } else {
+      const sums = new Map();
+      for (const p of readPrices(this._hass, state, c, this._onPrices).list) {
+        if (p.t < dayStart || p.t >= dayEnd) continue;
+        const i = Math.floor((p.t - dayStart) / HOUR);
+        const sum = sums.get(i) || [0, 0];
+        sums.set(i, [sum[0] + p.price, sum[1] + 1]);
+      }
+      for (const [i, [sum, n]] of sums) hourPrice.set(i, sum / n);
+    }
+    const usage = new Map();
+    for (const r of stats[c.energy_entity] || []) usage.set(slot(new Date(r.start)), Math.max(Number(r.change) || 0, 0));
+
+    // Score: where the average price paid lies between the day's most
+    // expensive (0) and cheapest (100) hour. Today only counts hours so far.
+    const lastHour = yesterday ? hours : Math.floor((Date.now() - dayStart) / HOUR) + 1;
+    const known = [...hourPrice.entries()].filter(([i]) => i < lastHour);
+    let kwh = 0, cost = 0;
+    for (const [i, u] of usage) if (hourPrice.has(i) && i < lastHour) { kwh += u; cost += u * hourPrice.get(i); }
+    const prices = known.map(([, v]) => v);
+    const min = prices.length ? Math.min(...prices) : 0, max = prices.length ? Math.max(...prices) : 0;
+    const paid = kwh > 0 ? cost / kwh : null;
+    const dayAvg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+    const score = paid != null && max > min ? Math.round((100 * (max - paid)) / (max - min)) : null;
+
+    let body;
+    if (!c.energy_entity) body = `<p class="msg">${t.chooseEnergy}</p>`;
+    else if (this._statsError) body = `<p class="msg">${esc(t.failed(this._statsError))}</p>`;
+    else if (!usage.size) body = `<p class="msg">${this._statsLoading ? t.loading : t.noUsage}</p>`;
+    else {
+      let text = `<div class="summary"><span>${yesterday ? t.yesterday : t.todaySoFar}</span>`;
+      if (paid != null) text += `<span>${t.paid} <b>${money(paid)}</b></span>`;
+      if (dayAvg != null) text += `<span>${t.dayAvg} ${money(dayAvg)}</span><span>${t.bestPossible} ${money(min)}</span>`;
+      text += `</div>`;
+      if (score != null && c.show_score !== false) {
+        const grade = score >= 75 ? t.great : score >= 50 ? t.good : t.ok;
+        text += `<div class="score"><b>${t.score} ${score}/100</b> · ${grade}<div class="meter"><span style="width:${score}%; background:${esc(bandColour(c, 1 - score / 100))}"></span></div></div>`;
+      }
+      body = text + `<div class="chart">${this._chart(c, hours, hourPrice, usage, lang)}</div>`;
+    }
+
+    const title = c.show_title === false ? "" : (typeof c.title === "string" && c.title.trim()) || t.usageTitle;
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display: block; }
+        .wrap { padding: 0 16px 12px; }
+        ha-card:not([header]) .wrap { padding-top: 12px; }
+        .msg { color: var(--secondary-text-color); margin: 0; }
+        .summary { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; color: var(--secondary-text-color); margin-bottom: 6px; }
+        .summary b, .score b { color: var(--primary-text-color); font-weight: 500; }
+        .score { font-size: 14px; color: var(--secondary-text-color); margin-bottom: 8px; }
+        .meter { height: 6px; border-radius: 3px; background: var(--divider-color, rgba(127,127,127,.25)); margin-top: 4px; overflow: hidden; }
+        .meter span { display: block; height: 100%; border-radius: 3px; }
+        svg { width: 100%; display: block; }
+        text { fill: var(--secondary-text-color); font-size: 11px; font-family: inherit; }
+        .grid { stroke: var(--divider-color, rgba(127,127,127,.3)); }
+        .nodata { fill: var(--disabled-text-color, #bdbdbd); }
+      </style>
+      <ha-card${title ? ` header="${esc(title)}"` : ""}><div class="wrap">${body}</div></ha-card>`;
+  }
+
+  _chart(c, hours, hourPrice, usage, lang) {
+    const W = 480, H = Math.max(Number(c.height) || 160, 80), L = 34, R = 4, T = 6, B = 18;
+    const pw = W - L - R, ph = H - T - B, bw = pw / hours;
+    const top = Math.max(...usage.values(), 0.1);
+    // kWh lines in steps of 0.1, 0.2, 0.5, 1, 2, 5 … at least 22 px apart.
+    const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
+    const step = steps.find((s) => (ph * s) / (Math.ceil(top / s) * s) >= 22) || 100;
+    const hi = Math.ceil(top / step) * step;
+    const y = (v) => T + ((hi - v) / hi) * ph;
+    const prices = [...hourPrice.values()];
+    const min = Math.min(...prices), max = Math.max(...prices);
+    let svg = "";
+    for (let v = 0; v <= hi + 1e-9; v += step) {
+      svg += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`;
+      svg += `<text x="${L - 4}" y="${y(v) + 4}" text-anchor="end">${num(v, step < 1 ? 1 : 0, lang)}</text>`;
+    }
+    for (let i = 0; i < hours; i += 3) svg += `<text x="${L + i * bw}" y="${H - 3}" text-anchor="middle">${i}</text>`;
+    for (const [i, u] of usage) {
+      if (i < 0 || i >= hours) continue;
+      const p = hourPrice.get(i);
+      let f = p != null && max > min ? (p - min) / (max - min) : 0.5;
+      if (c.mode === "feed_in") f = 1 - f;
+      const fill = p == null ? null : p < 0 ? NEGATIVE_COLOUR : bandColour(c, f);
+      const tip = `${String(i).padStart(2, "0")}:00: ${num(u, 2, lang)} kWh${p != null ? ` · ${euro(p, c.decimals, lang, this._cur)}` : ""}`;
+      svg += `<rect ${fill ? `style="fill: ${esc(fill)}"` : `class="nodata"`} x="${L + i * bw + 1}" y="${y(u)}" width="${Math.max(bw - 2, 1)}" height="${Math.max(y(0) - y(u), 0.5)}"><title>${esc(tip)}</title></rect>`;
+    }
+    return `<svg viewBox="0 0 ${W} ${H}" role="img">${svg}</svg>`;
+  }
+}
+
+class UsageCardEditor extends FormEditor {
+  texts(lang) {
+    return EDITOR_TEXTS[lang];
+  }
+
+  withDefaults(c) {
+    return {
+      day: "today",
+      show_score: true,
+      height: 160,
+      follow_chart: true,
+      palette: "traffic",
+      color_steps: 3,
+      source: "attribute",
+      price_unit: "auto",
+      currency: "auto",
+      ...c,
+    };
+  }
+
+  schema(tx, c, lang) {
+    const schema = [
+      { name: "energy_entity", required: true, selector: { entity: { domain: "sensor", device_class: "energy" } } },
+      { name: "day", selector: choice(tx.days) },
+      { name: "show_score", selector: { boolean: {} } },
+      { name: "height", selector: num_(80, 600, 10, "px") },
+      { name: "follow_chart", selector: { boolean: {} } },
+    ];
+    if (c.follow_chart === false) {
+      if (!ACTION_SOURCES[c.source]) schema.push({ name: "entity", selector: { entity: { domain: "sensor" } } });
+      schema.push({ name: "palette", selector: choice(tx.palettes) });
+      if (c.palette === "custom") schema.push(colourPair());
+      schema.push({ name: "color_steps", selector: num_(2, 6, 1) }, advancedSection(tx, c, lang, [{ name: "decimals", selector: num_(0, 4, 1) }]));
     }
     return schema;
   }
@@ -1816,6 +2478,8 @@ for (const [name, cls] of [
   ["electricity-price-planner-card-editor", PriceChartCardEditor],
   ["electricity-price-planner-badge", PriceBadge],
   ["electricity-price-planner-badge-editor", PriceBadgeEditor],
+  ["electricity-price-planner-usage-card", UsageCard],
+  ["electricity-price-planner-usage-card-editor", UsageCardEditor],
 ]) {
   if (!customElements.get(name)) customElements.define(name, cls);
 }
@@ -1826,6 +2490,12 @@ window.customCards.push({
   name: "Electricity Price Planner card",
   description: "Hourly electricity prices for today and tomorrow",
   preview: true,
+});
+window.customCards.push({
+  type: "electricity-price-planner-usage-card",
+  name: "Electricity Price Planner usage",
+  description: "Your electricity use per hour, coloured by price, with a score",
+  preview: false,
 });
 window.customBadges = window.customBadges || [];
 window.customBadges.push({
