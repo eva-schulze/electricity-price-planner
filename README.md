@@ -28,19 +28,20 @@ cannot show the prices still to come.
 - Colour palettes: green – orange – red, **blue – orange for red-green colour
   blindness**, a simple modern grey scale, or your own two colours (the steps
   in between are blended automatically).
-- Past hours faded, the current hour outlined, night hours shaded (optional).
-- Text above the chart, each line optional: the **price now**, the
-  **cheapest hour still to come** (price, day and hour) and the
-  **cheapest block**.
-- Optional **cheapest block of N hours**, for example the best 3 hours for the
+- Past hours faded, the current hour outlined.
+- Optional: night hours shaded.
+- Optional: text above the chart, each line on or off: the price now, the
+  cheapest hour still to come (price, day and hour) and the cheapest block.
+- Optional: cheapest block of N hours, for example the best 3 hours for the
   washing machine, marked with a bracket in the chart.
-- **Badges** for the top of a dashboard: price now, cheapest hour, cheapest
-  block (still to come, today, tomorrow or both) and the price at a set hour.
+- Optional: badges for the top of a dashboard: price now, cheapest hour,
+  cheapest block (still to come, today, tomorrow or both) and the price at a
+  set hour.
 - English, Dutch, German, French and Spanish, following the language of your
   Home Assistant user (other languages fall back to English). Prices use that
   language's format, for example `€0.28`, `€ 0,28` or `0,28 €`.
 - Price lines every 5 cents, or a multiple of 5 cents when the chart is low.
-- Optional fixed top of the scale, so you can compare days at a glance.
+- Optional: fixed top of the scale, so you can compare days at a glance.
 - Settings form in the dashboard editor, like Home Assistant's own cards.
 - Width via the Layout tab in sections dashboards; adjustable chart height.
 - Follows your Home Assistant theme, light and dark.
