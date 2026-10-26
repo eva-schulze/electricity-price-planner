@@ -1,13 +1,17 @@
-# Pure Energie Price Card
+# Pure Energie Price Card – beta for more integrations
 
-A Home Assistant dashboard card and badges that show the hourly electricity
-prices of a Pure Energie dynamic contract for **today and tomorrow**: a bar
-chart, plus badges for the top of a dashboard.
+A Home Assistant dashboard card and badges that show dynamic electricity
+prices for **today and tomorrow**, per hour or per quarter hour: a bar chart,
+plus badges for the top of a dashboard. Home Assistant's built-in charts only
+show history, so they cannot show the prices still to come.
 
-It reads the price list from the
-[Pure Energie Prices](https://github.com/venraij/hacs-pure-energy-prices)
-custom integration. Home Assistant's built-in charts only show history, so they
-cannot show the prices still to come.
+> **This is a beta (pre-release).** It reads the price lists of several
+> integrations and supports quarter-hour prices. I have only tested it myself
+> with the Pure Energie Prices integration. The other formats are recognised
+> from those integrations' code and were tested with sample data, not with
+> real installations. If you try it, please open an issue saying which
+> integration you use and whether the prices look right. For the tested
+> version, use release 1.1.0 (Pure Energie Prices only).
 
 ![Pure Energie Price Card with sample prices](images/screenshot.png)
 
@@ -18,8 +22,9 @@ cannot show the prices still to come.
 
 ## Features
 
-- Hourly bars from midnight today to midnight tomorrow. Tomorrow fills in as
-  soon as Pure Energie publishes the prices (usually in the afternoon).
+- Bars from midnight today to midnight tomorrow, per hour or per quarter
+  hour. Tomorrow fills in as soon as the prices are published (usually in the
+  afternoon).
 - Hover over, tap or drag across the bars to see the exact price of an hour
   below the chart. Works on touchscreens.
 - Colours relative to the prices shown: by default green for the cheapest
@@ -35,8 +40,8 @@ cannot show the prices still to come.
 - Optional: cheapest block of N hours, for example the best 3 hours for the
   washing machine, marked with a bracket in the chart.
 - Optional: badges for the top of a dashboard: price now, cheapest hour,
-  cheapest block (still to come, today, tomorrow or both) and the price at a
-  set hour.
+  cheapest block, average price (still to come, today, tomorrow or both) and
+  the price at a set hour.
 - English, Dutch, German, French and Spanish, following the language of your
   Home Assistant user (other languages fall back to English). Prices use that
   language's format, for example `€0.28`, `€ 0,28` or `0,28 €`.
@@ -50,11 +55,20 @@ cannot show the prices still to come.
 ## Requirements
 
 - Home Assistant 2024.11 or newer.
-- The [Pure Energie Prices](https://github.com/venraij/hacs-pure-energy-prices)
-  integration, version 0.2.4 or newer, with electricity enabled.
+- A price integration that keeps the prices for today and tomorrow as a list
+  in a sensor attribute:
 
-The card only understands the price list of that integration. It does not work
-with other price integrations such as EnergyZero, easyEnergy or Nord Pool.
+| Integration | Status in this beta |
+|---|---|
+| [Pure Energie Prices](https://github.com/venraij/hacs-pure-energy-prices) 0.2.4 or newer | Tested by me |
+| [Nord Pool](https://github.com/custom-components/nordpool) | Recognised automatically, not tested |
+| [ENTSO-e](https://github.com/JaccoR/hass-entso-e) | Recognised automatically, not tested |
+| [Frank Energie](https://github.com/HiDiHo01/home-assistant-frank_energie) | Recognised automatically, not tested |
+| Other integrations with a price list in an attribute | Set the data format yourself (see Options) |
+
+Integrations that only offer prices through an action, not in an attribute,
+do not work with this card. As far as I know, that includes the built-in
+EnergyZero, easyEnergy and Tibber integrations.
 
 ## Installation
 
@@ -88,15 +102,20 @@ type: custom:pure-energie-price-card
 entity: sensor.pure_energie_electricity_import
 ```
 
-Use the integration's plain price sensor (not the "raw" or "percentile"
+Choose the sensor of your integration that carries the price list. For Pure
+Energie Prices that is the plain price sensor (not the "raw" or "percentile"
 sensors). Your entity ID may differ; check it under **Settings → Devices &
-services → Entities**.
+services → Entities**, where the sensor's attributes show the list.
 
 ## Options
 
 | Option | Default | Description |
 |---|---|---|
-| `entity` | *(required)* | The Pure Energie Prices price sensor. |
+| `entity` | *(required)* | The price sensor. |
+| `attribute` | found automatically | Attribute with the price list. Several separated by commas, for example `raw_today, raw_tomorrow`. |
+| `time_key` | found automatically | Field with the start time in each entry. A dot for nested fields, for example `date.full`. |
+| `price_key` | found automatically | Field with the price, for example `price` or `value`. |
+| `price_factor` | `1` | Multiply all prices, for example `0.01` for cents or `0.001` for €/MWh. |
 | `show_title` | `true` | Set to `false` to hide the title. |
 | `title` | `Electricity price` / `Stroomprijs` | Card title. Empty uses the default in the dashboard's language. |
 | `show_summary` | `true` | Set to `false` to hide all text above the chart. |
@@ -116,6 +135,12 @@ services → Entities**.
 | `night_shading` | `true` | Set to `false` to turn the night shading off. |
 | `night_start` | `22` | First hour with night shading. |
 | `night_end` | `6` | Last hour with night shading (included). |
+
+If the card shows prices that are 100 or 1000 times too high, the
+integration gives cents or €/MWh: set `price_factor`. If it shows "No prices
+available yet" although the sensor has a price list, set `attribute`,
+`time_key` and `price_key` yourself. The settings form has a switch for this:
+**Set the data format myself**.
 
 Example:
 
@@ -151,11 +176,12 @@ badges:
 
 | Option | Default | Description |
 |---|---|---|
-| `entity` | *(required)* | The Pure Energie Prices price sensor. |
-| `show` | `now` | `now` (price now), `cheapest` (cheapest hour), `block` (cheapest run of hours) or `at` (price at a set hour). |
-| `range` | `upcoming` | For `cheapest` and `block`: `upcoming` (hours still to come), `today` (whole day), `tomorrow` (whole day) or `both`. |
+| `entity` | *(required)* | The price sensor. |
+| `show` | `now` | `now` (price now), `cheapest` (cheapest hour), `block` (cheapest run of hours), `average` (average price) or `at` (price at a set hour). |
+| `range` | `upcoming` | For `cheapest`, `block` and `average`: `upcoming` (hours still to come), `today` (whole day), `tomorrow` (whole day) or `both`. |
 | `block_hours` | `3` | Hours in the block, 1 to 12. |
-| `hour` | `6` | For `at`: the hour to show. The badge shows the next time the clock reaches it: today if it has not passed yet, otherwise tomorrow once that price is known. |
+| `hour` | `6` | For `at`: the hour to show. The badge shows the next time the clock reaches it: today if it has not passed yet, otherwise tomorrow once that price is known. With quarter-hour prices, the hour's four prices are averaged. |
+| `attribute`, `time_key`, `price_key`, `price_factor` | as for the card | Only needed if the format is not recognised. |
 | `name` | automatic | Replaces the label. |
 | `icon` | per type | Any `mdi:` icon. |
 | `decimals`, `palette`, `color_low`, `color_high`, `color_steps` | as for the card | The icon takes the colour of the price, compared with all known prices. |
@@ -171,8 +197,8 @@ a badge shows a dash; hover over it to read "not known yet".
   equal bands (three by default, see `color_steps`). They say how an hour
   compares with the other hours shown, not whether a day is cheap; use `y_max`
   for that.
-- The cheapest block starts after the current hour and only uses hours whose
-  prices are known, so it can move once tomorrow's prices arrive.
+- The cheapest block starts after the current hour (or quarter hour) and only
+  uses prices that are known, so it can move once tomorrow's prices arrive.
 - Times are shown in the time zone of the device viewing the dashboard.
 - The card's version is printed in the browser console when it loads, which
   helps when reporting a problem.
@@ -180,8 +206,8 @@ a badge shows a dash; hover over it to read "not known yet".
 ## Privacy
 
 The card makes no network requests. It only reads the price sensor from your
-own Home Assistant. Fetching the prices from Pure Energie is done by the
-integration, not by this card.
+own Home Assistant. Fetching the prices is done by your price integration,
+not by this card.
 
 ## Support and suggestions
 

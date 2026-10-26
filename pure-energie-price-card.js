@@ -1,13 +1,21 @@
-// Pure Energie price card for Home Assistant.
-// Draws hourly electricity prices for today and tomorrow as bars, read from the
-// `prices` attribute of a Pure Energie Prices sensor
-// (https://github.com/venraij/hacs-pure-energy-prices). No external libraries,
-// no network requests. MIT licence, see LICENSE.
+// Energy price card and badges for Home Assistant (beta).
+// Draws dynamic electricity prices for today and tomorrow as bars, per hour or
+// per quarter hour, read from the price list a price sensor keeps in its
+// attributes. Tested with Pure Energie Prices
+// (https://github.com/venraij/hacs-pure-energy-prices); the formats of Nord
+// Pool, ENTSO-e and Frank Energie are recognised from their code but untested.
+// No external libraries, no network requests. MIT licence, see LICENSE.
 //
 // All settings can be changed in the card editor (Edit dashboard, then the
 // card's pencil), or in YAML:
 //   type: custom:pure-energie-price-card
 //   entity: sensor.pure_energie_electricity_import
+//   attribute: prices               (optional; normally found automatically.
+//                                    Several: "raw_today, raw_tomorrow")
+//   time_key: start                 (optional, field with the start time; dots
+//                                    for nested fields, e.g. date.full)
+//   price_key: value                (optional, field with the price)
+//   price_factor: 0.01              (optional, e.g. for prices in cents)
 //   show_title: true                (optional, false hides the title)
 //   title: Electricity price        (optional; empty uses the default title in
 //                                    the dashboard's language)
@@ -40,11 +48,13 @@
 // The same file also provides a badge for the top of a dashboard view:
 //   type: custom:pure-energie-price-badge
 //   entity: sensor.pure_energie_electricity_import
-//   show: now                       (now, cheapest, block or at)
-//   range: upcoming                 (for cheapest and block: upcoming, today,
-//                                    tomorrow or both)
+//   show: now                       (now, cheapest, block, at or average)
+//   range: upcoming                 (for cheapest, block and average: upcoming,
+//                                    today, tomorrow or both)
 //   block_hours: 3                  (for show: block)
-//   hour: 6                         (for show: at; the next time it is 06:00)
+//   hour: 6                         (for show: at; the next time it is 06:00,
+//                                    averaged over the hour for quarter hours)
+//   attribute, time_key, price_key, price_factor as for the card
 //   name: Washing machine           (optional, replaces the label)
 //   icon: mdi:washing-machine       (optional)
 //   decimals, palette, color_low, color_high, color_steps as for the card;
@@ -53,7 +63,7 @@
 // Texts follow the Home Assistant language: English, Dutch, German, French or
 // Spanish (others fall back to English). Prices use that language's format.
 
-const VERSION = "1.1.0";
+const VERSION = "2.0.0-beta.1";
 const HOUR = 3600000;
 
 const TEXTS = {
@@ -75,6 +85,8 @@ const TEXTS = {
     bAt: "At",
     unknown: "not known yet",
     ranges: { upcoming: "", today: "today", tomorrow: "tomorrow", both: "today + tomorrow" },
+    bAvg: "Average",
+    rest: "still to come",
   },
   nl: {
     title: "Stroomprijs",
@@ -94,6 +106,8 @@ const TEXTS = {
     bAt: "Om",
     unknown: "nog niet bekend",
     ranges: { upcoming: "", today: "vandaag", tomorrow: "morgen", both: "vandaag + morgen" },
+    bAvg: "Gemiddeld",
+    rest: "nog te komen",
   },
   de: {
     title: "Strompreis",
@@ -113,6 +127,8 @@ const TEXTS = {
     bAt: "Um",
     unknown: "noch nicht bekannt",
     ranges: { upcoming: "", today: "heute", tomorrow: "morgen", both: "heute + morgen" },
+    bAvg: "Durchschnitt",
+    rest: "noch kommend",
   },
   fr: {
     title: "Prix de l’électricité",
@@ -132,6 +148,8 @@ const TEXTS = {
     bAt: "À",
     unknown: "pas encore connu",
     ranges: { upcoming: "", today: "aujourd’hui", tomorrow: "demain", both: "aujourd’hui + demain" },
+    bAvg: "Moyenne",
+    rest: "à venir",
   },
   es: {
     title: "Precio de la electricidad",
@@ -151,6 +169,8 @@ const TEXTS = {
     bAt: "A las",
     unknown: "aún no se conoce",
     ranges: { upcoming: "", today: "hoy", tomorrow: "mañana", both: "hoy + mañana" },
+    bAvg: "Media",
+    rest: "por venir",
   },
 };
 
@@ -207,16 +227,82 @@ function num(v, decimals, lang) {
 }
 
 function hh(d) {
-  return String(d.getHours()).padStart(2, "0") + ":00";
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 }
 
 function weekday(d, hass) {
   return d.toLocaleDateString(language(hass), { weekday: "short" });
 }
 
-// Today and tomorrow as hour slots from local midnight, with the sensor's
+// Price lists come in the formats of several integrations. Each entry needs a
+// start time and a price; the first field name that is present is used. Own
+// names can be set with time_key / price_key (a dot for nested fields).
+const TIME_KEYS = ["date.full", "start", "startsAt", "from", "time", "datetime", "start_time", "date"];
+const PRICE_KEYS = ["price", "value", "total", "electricity_price", "price_tax_included.amount"];
+// Attributes that hold a price list, tried in this order: Pure Energie Prices,
+// ENTSO-e and Frank Energie (prices), Nord Pool (raw_today / raw_tomorrow),
+// split lists (prices_today / prices_tomorrow), forecasts.
+const LIST_ATTRIBUTES = [["prices"], ["raw_today", "raw_tomorrow"], ["prices_today", "prices_tomorrow"], ["forecast"]];
+
+function pick(obj, path) {
+  return String(path).split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj);
+}
+
+// "2026-10-26 14:00" without a zone is local time; ISO strings with a zone are
+// converted; numbers are Unix seconds or milliseconds.
+function toDate(v) {
+  if (typeof v === "number") return new Date(v < 1e12 ? v * 1000 : v);
+  if (typeof v !== "string" || !v.trim()) return null;
+  const d = new Date(v.trim().replace(" ", "T"));
+  return isNaN(d) ? null : d;
+}
+
+function listNames(attrs, c) {
+  if (c.attribute) return String(c.attribute).split(",").map((n) => n.trim()).filter(Boolean);
+  return LIST_ATTRIBUTES.find((group) => group.some((n) => Array.isArray(attrs[n]))) || [];
+}
+
+// All prices of the sensor as { t, price }, sorted, one per start time.
+function readPrices(state, c = {}) {
+  const attrs = (state && state.attributes) || {};
+  const timeKeys = c.time_key ? [c.time_key] : TIME_KEYS;
+  const priceKeys = c.price_key ? [c.price_key] : PRICE_KEYS;
+  const factor = Number(c.price_factor) || 1;
+  const found = new Map();
+  for (const name of listNames(attrs, c)) {
+    for (const item of Array.isArray(attrs[name]) ? attrs[name] : []) {
+      if (!item || typeof item !== "object") continue;
+      let t = null;
+      for (const k of timeKeys) if ((t = toDate(pick(item, k)))) break;
+      let price = null;
+      for (const k of priceKeys) {
+        const v = pick(item, k);
+        if (v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v))) { price = Number(v); break; }
+      }
+      if (t && price !== null) found.set(t.getTime(), { t, price: price * factor });
+    }
+  }
+  return [...found.values()].sort((a, b) => a.t - b.t);
+}
+
+// The length of one price period in minutes: the most common gap between
+// start times (15, 30 or 60), hourly when unclear.
+function slotMinutes(list) {
+  const counts = {};
+  for (let j = 1; j < list.length; j++) {
+    const gap = Math.round((list[j].t - list[j - 1].t) / 60000);
+    if (gap === 15 || gap === 30 || gap === 60) counts[gap] = (counts[gap] || 0) + 1;
+  }
+  const best = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+  return best ? Number(best) : 60;
+}
+
+// Today and tomorrow as price periods from local midnight, with the sensor's
 // prices placed in them. Shared by the card and the badge.
-function priceDays(state) {
+function priceDays(state, c = {}) {
+  const list = readPrices(state, c);
+  const slotMin = slotMinutes(list);
+  const slotMs = slotMin * 60000;
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   const tomorrow = new Date(start);
@@ -224,37 +310,36 @@ function priceDays(state) {
   const end = new Date(start);
   end.setDate(end.getDate() + 2);
   // Rounding keeps the slots right on the 23- and 25-hour days of a clock change.
-  const slots = Math.round((end - start) / HOUR);
-  const split = Math.round((tomorrow - start) / HOUR);
-  const nowSlot = Math.floor((Date.now() - start) / HOUR);
+  const slots = Math.round((end - start) / slotMs);
+  const split = Math.round((tomorrow - start) / slotMs);
+  const nowSlot = Math.floor((Date.now() - start) / slotMs);
   const bars = [];
-  for (const p of (state && state.attributes.prices) || []) {
-    const full = p && p.date && p.date.full;
-    if (!full || typeof p.price !== "number") continue;
-    const time = new Date(full.replace(" ", "T"));
-    const i = Math.round((time - start) / HOUR);
-    if (i >= 0 && i < slots) bars.push({ i, t: time, price: p.price });
+  for (const p of list) {
+    const i = Math.round((p.t - start) / slotMs);
+    if (i >= 0 && i < slots) bars.push({ i, t: p.t, price: p.price });
   }
-  bars.sort((a, b) => a.i - b.i);
-  return { start, slots, split, nowSlot, bars };
+  return { start, slots, split, nowSlot, bars, slotMin, slotMs };
 }
 
-// The run of `hours` consecutive hours, starting after the current hour, with
-// the lowest average price. Null when off or not enough data.
-function cheapestBlock(bars, nowSlot, hours) {
-  const n = Math.min(Math.max(Math.round(Number(hours) || 0), 0), 12);
-  if (n < 1) return null;
-  const byHour = new Map(bars.map((b) => [b.i, b]));
+// The run of `hours` consecutive hours, starting after the current period,
+// with the lowest average price. Null when off or not enough data.
+function cheapestBlock(bars, nowSlot, hours, slotMin = 60) {
+  const h = Math.min(Math.max(Math.round(Number(hours) || 0), 0), 12);
+  if (h < 1) return null;
+  const n = Math.round((h * 60) / slotMin);
+  const bySlot = new Map(bars.map((b) => [b.i, b]));
   let best = null;
   for (const b of bars) {
     if (b.i <= nowSlot) continue;
     let sum = 0, ok = true;
     for (let k = 0; k < n; k++) {
-      const x = byHour.get(b.i + k);
+      const x = bySlot.get(b.i + k);
       if (!x) { ok = false; break; }
       sum += x.price;
     }
-    if (ok && (!best || sum / n < best.avg)) best = { from: b.i, to: b.i + n - 1, start: b.t, avg: sum / n, n };
+    if (ok && (!best || sum / n < best.avg)) {
+      best = { from: b.i, to: b.i + n - 1, start: b.t, end: new Date(b.t.getTime() + h * HOUR), avg: sum / n, hours: h };
+    }
   }
   return best;
 }
@@ -286,7 +371,7 @@ class PriceChartCard extends HTMLElement {
   static getStubConfig(hass) {
     // Pre-fill the first sensor that carries a price list.
     const entity = Object.keys(hass.states).find(
-      (id) => id.startsWith("sensor.") && Array.isArray(hass.states[id].attributes.prices)
+      (id) => id.startsWith("sensor.") && listNames(hass.states[id].attributes || {}, {}).length > 0
     );
     return { entity: entity || "" };
   }
@@ -306,7 +391,8 @@ class PriceChartCard extends HTMLElement {
     this._hass = hass;
     this._t = TEXTS[language(hass)];
     const state = hass.states[this._config.entity];
-    const key = (state ? state.last_updated : "missing") + "|" + new Date().getHours() + "|" + language(hass);
+    // Redraw when the sensor changes, and each quarter hour for the "now" marker.
+    const key = (state ? state.last_updated : "missing") + "|" + Math.floor(Date.now() / 900000) + "|" + language(hass);
     if (key === this._key) return;
     this._key = key;
     this._state = state;
@@ -344,9 +430,10 @@ class PriceChartCard extends HTMLElement {
     const t = this._t || TEXTS.en;
     const state = this._state;
 
-    const { start, slots, split, nowSlot, bars } = priceDays(state);
+    const { start, slots, split, nowSlot, bars, slotMin, slotMs } = priceDays(state, this._config);
     this._bars = bars;
-    this._block = cheapestBlock(bars, nowSlot, this._config.block_hours);
+    this._slotMs = slotMs;
+    this._block = cheapestBlock(bars, nowSlot, this._config.block_hours, slotMin);
 
     let body;
     if (!this._config.entity) {
@@ -356,7 +443,7 @@ class PriceChartCard extends HTMLElement {
     } else if (!bars.length) {
       body = `<p class="msg">${t.empty}</p>`;
     } else {
-      this._ctx = { bars, slots, split, nowSlot, start };
+      this._ctx = { bars, slots, split, nowSlot, start, slotMin, slotMs };
       const summary = this._config.show_summary === false ? "" : this._summary(bars, nowSlot);
       const info = this._config.show_info === false ? "" : `<div class="info">${t.hint}</div>`;
       body = summary + `<div class="chart"></div>${info}`;
@@ -437,7 +524,7 @@ class PriceChartCard extends HTMLElement {
     root.querySelectorAll("rect.sel").forEach((r) => r.classList.remove("sel"));
     const bar = root.querySelector(`rect[data-bar="${i}"]`);
     if (bar) bar.classList.add("sel");
-    const next = new Date(b.t.getTime() + HOUR);
+    const next = new Date(b.t.getTime() + this._slotMs);
     const info = root.querySelector(".info");
     if (info) info.innerHTML = `${esc(this._day(b.t))} ${hh(b.t)}–${hh(next)}: <b>${euro(b.price, this._config.decimals, language(this._hass))}</b>`;
   }
@@ -455,8 +542,7 @@ class PriceChartCard extends HTMLElement {
     }
     const blk = this._block;
     if (blk && this._config.summary_block !== false) {
-      const endTime = new Date(blk.start.getTime() + blk.n * HOUR);
-      parts.push(`<span>${t.block(blk.n)}: <b>${this._day(blk.start)} ${hh(blk.start)}–${hh(endTime)}</b>, ${t.avg} <b>${euro(blk.avg, d, language(this._hass))}</b></span>`);
+      parts.push(`<span>${t.block(blk.hours)}: <b>${this._day(blk.start)} ${hh(blk.start)}–${hh(blk.end)}</b>, ${t.avg} <b>${euro(blk.avg, d, language(this._hass))}</b></span>`);
     }
     return parts.length ? `<div class="summary">${parts.join("")}</div>` : "";
   }
@@ -481,7 +567,7 @@ class PriceChartCard extends HTMLElement {
 
   _chart(W, H) {
     const t = this._t || TEXTS.en;
-    const { bars, slots, split, nowSlot, start } = this._ctx;
+    const { bars, slots, split, nowSlot, start, slotMin, slotMs } = this._ctx;
     const k = this._k;
     const L = 38 * k, R = 4, T = 10, B = 20 * k;
     const pw = W - L - R, ph = H - T - B, bw = pw / slots;
@@ -495,12 +581,16 @@ class PriceChartCard extends HTMLElement {
     // Price lines every 5 cents, or a multiple of 5 (10, 15, 20 …) when the
     // chart is too low to keep the labels at least 22 px apart. The scale is
     // rounded out to whole steps, so the top and bottom lines are labelled.
+    // Unusually large values (a price list in cents or €/MWh without a
+    // factor) get steps of 1, 2, 5 × 10ⁿ, so the number of lines stays small.
+    const steps = [];
+    for (let k = 1; k <= 20; k++) steps.push(0.05 * k);
+    for (let e = 0; e < 12; e++) steps.push(2 * 10 ** e, 5 * 10 ** e, 10 * 10 ** e);
     let step, lo, hi;
-    for (let k = 1; ; k++) {
-      step = 0.05 * k;
+    for (step of steps) {
       lo = Math.floor(Math.min(0, min) / step + 1e-9) * step;
       hi = Math.max(Math.ceil(scaleTop / step - 1e-9) * step, lo + step);
-      if ((ph * step) / (hi - lo) >= 22 * this._k || k >= 40) break;
+      if ((ph * step) / (hi - lo) >= 22 * this._k) break;
     }
     const y = (v) => T + ((hi - v) / (hi - lo)) * ph;
 
@@ -510,7 +600,7 @@ class PriceChartCard extends HTMLElement {
     const ns = this._config.night_start ?? 22, ne = this._config.night_end ?? 6;
     const isNight = (i) => {
       if (this._config.night_shading === false) return false;
-      const h = new Date(start.getTime() + i * HOUR).getHours();
+      const h = new Date(start.getTime() + i * slotMs).getHours();
       return ns > ne ? h >= ns || h <= ne : h >= ns && h <= ne;
     };
     for (let i = 0; i < slots; ) {
@@ -531,10 +621,14 @@ class PriceChartCard extends HTMLElement {
     // Lines sit on hour boundaries, at the left edge of the bar that hour
     // starts: a tick at every hour; at every labelled hour a longer tick, the
     // label and a faint guide line running up between the bars. A wider card
-    // gets labels more often (every 1, 2, 3 or 6 hours).
-    const every = [1, 2, 3, 6].find((s) => s * bw >= (s === 3 ? 17 : 24) * k) || 6;
+    // gets labels more often (every 1, 2, 3 or 6 hours). With quarter hours,
+    // four bars share one hour.
+    const hourWidth = bw * (60 / slotMin);
+    const every = [1, 2, 3, 6].find((s) => s * hourWidth >= (s === 3 ? 17 : 24) * k) || 6;
     for (let i = 0; i < slots; i++) {
-      const h = new Date(start.getTime() + i * HOUR).getHours();
+      const time = new Date(start.getTime() + i * slotMs);
+      if (time.getMinutes() !== 0) continue;
+      const h = time.getHours();
       const cx = L + i * bw;
       const major = h % every === 0;
       if (major && i !== split) svg += `<line class="guide" x1="${cx}" x2="${cx}" y1="${T}" y2="${T + ph}"/>`;
@@ -548,7 +642,9 @@ class PriceChartCard extends HTMLElement {
       if (b.i < nowSlot) cls.push("past");
       if (b.i === nowSlot) cls.push("now");
       const top = y(Math.max(b.price, 0)), bottom = y(Math.min(b.price, 0));
-      svg += `<rect class="${cls.join(" ")}" style="fill: ${esc(this._colour(f))}" data-bar="${b.i}" x="${L + b.i * bw + 0.5}" y="${top}" width="${Math.max(bw - 1, 0.5)}" height="${Math.max(bottom - top, 0.5)}"/>`;
+      // A 1 px gap between bars, unless they are too thin for it.
+      const gap = bw >= 4 ? 1 : 0;
+      svg += `<rect class="${cls.join(" ")}" style="fill: ${esc(this._colour(f))}" data-bar="${b.i}" x="${L + b.i * bw + gap / 2}" y="${top}" width="${Math.max(bw - gap, 0.5)}" height="${Math.max(bottom - top, 0.5)}"/>`;
     }
 
     // The cheapest block: a bracket just above its tallest bar.
@@ -579,6 +675,11 @@ const EDITOR_TEXTS = {
   en: {
     labels: {
       entity: "Price sensor",
+      source_custom: "Set the data format myself",
+      attribute: "Attribute with the price list",
+      time_key: "Field with the start time",
+      price_key: "Field with the price",
+      price_factor: "Multiply prices by",
       show_title: "Show title",
       title: "Title",
       show_summary: "Show text above the chart",
@@ -604,6 +705,11 @@ const EDITOR_TEXTS = {
     },
     helpers: {
       title: "Leave empty for the default title.",
+      source_custom: "Only needed when the card shows no prices. The formats of Pure Energie Prices, Nord Pool, ENTSO-e and Frank Energie are recognised automatically (beta).",
+      attribute: "Name of the sensor attribute, for example prices, or raw_today, raw_tomorrow (comma between several).",
+      time_key: "For example start or date.full (a dot for a nested field).",
+      price_key: "For example price or value.",
+      price_factor: "For example 0.01 when the integration gives cents, 0.001 for €/MWh.",
       show_summary: "Switch off to hide all text above the chart, or choose below which lines to show.",
       show_info: "The line with the price of the bar you hover over or tap. Off: the bar is still highlighted.",
       y_max: "A higher price still stretches the scale.",
@@ -622,6 +728,11 @@ const EDITOR_TEXTS = {
   nl: {
     labels: {
       entity: "Prijssensor",
+      source_custom: "Gegevensformaat zelf instellen",
+      attribute: "Attribuut met de prijslijst",
+      time_key: "Veld met de begintijd",
+      price_key: "Veld met de prijs",
+      price_factor: "Prijzen vermenigvuldigen met",
       show_title: "Titel tonen",
       title: "Titel",
       show_summary: "Tekst boven de grafiek tonen",
@@ -647,6 +758,11 @@ const EDITOR_TEXTS = {
     },
     helpers: {
       title: "Laat leeg voor de standaardtitel.",
+      source_custom: "Alleen nodig als de kaart geen prijzen toont. De formaten van Pure Energie Prices, Nord Pool, ENTSO-e en Frank Energie worden automatisch herkend (bèta).",
+      attribute: "Naam van het sensorattribuut, bijvoorbeeld prices, of raw_today, raw_tomorrow (komma tussen meerdere).",
+      time_key: "Bijvoorbeeld start of date.full (een punt voor een genest veld).",
+      price_key: "Bijvoorbeeld price of value.",
+      price_factor: "Bijvoorbeeld 0,01 als de integratie centen geeft, 0,001 bij €/MWh.",
       show_summary: "Zet uit om alle tekst boven de grafiek te verbergen, of kies hieronder welke regels je wilt zien.",
       show_info: "De regel met de prijs van de balk waar je overheen beweegt of op tikt. Uit: de balk wordt nog wel gemarkeerd.",
       y_max: "Een hogere prijs rekt de schaal toch op.",
@@ -665,6 +781,11 @@ const EDITOR_TEXTS = {
   de: {
     labels: {
       entity: "Preissensor",
+      source_custom: "Datenformat selbst festlegen",
+      attribute: "Attribut mit der Preisliste",
+      time_key: "Feld mit der Startzeit",
+      price_key: "Feld mit dem Preis",
+      price_factor: "Preise multiplizieren mit",
       show_title: "Titel anzeigen",
       title: "Titel",
       show_summary: "Text über dem Diagramm anzeigen",
@@ -690,6 +811,11 @@ const EDITOR_TEXTS = {
     },
     helpers: {
       title: "Leer lassen für den Standardtitel.",
+      source_custom: "Nur nötig, wenn die Karte keine Preise zeigt. Die Formate von Pure Energie Prices, Nord Pool, ENTSO-e und Frank Energie werden automatisch erkannt (Beta).",
+      attribute: "Name des Sensorattributs, zum Beispiel prices, oder raw_today, raw_tomorrow (Komma zwischen mehreren).",
+      time_key: "Zum Beispiel start oder date.full (ein Punkt für ein verschachteltes Feld).",
+      price_key: "Zum Beispiel price oder value.",
+      price_factor: "Zum Beispiel 0,01, wenn die Integration Cent liefert, 0,001 bei €/MWh.",
       show_summary: "Ausschalten, um den ganzen Text über dem Diagramm auszublenden, oder unten wählen, welche Zeilen erscheinen.",
       show_info: "Die Zeile mit dem Preis des Balkens, über den du fährst oder den du antippst. Aus: Der Balken wird trotzdem markiert.",
       y_max: "Ein höherer Preis streckt die Skala trotzdem.",
@@ -708,6 +834,11 @@ const EDITOR_TEXTS = {
   fr: {
     labels: {
       entity: "Capteur de prix",
+      source_custom: "Définir moi-même le format des données",
+      attribute: "Attribut contenant la liste des prix",
+      time_key: "Champ de l’heure de début",
+      price_key: "Champ du prix",
+      price_factor: "Multiplier les prix par",
       show_title: "Afficher le titre",
       title: "Titre",
       show_summary: "Afficher le texte au-dessus du graphique",
@@ -733,6 +864,11 @@ const EDITOR_TEXTS = {
     },
     helpers: {
       title: "Laissez vide pour le titre par défaut.",
+      source_custom: "Nécessaire seulement si la carte n’affiche aucun prix. Les formats de Pure Energie Prices, Nord Pool, ENTSO-e et Frank Energie sont reconnus automatiquement (bêta).",
+      attribute: "Nom de l’attribut du capteur, par exemple prices, ou raw_today, raw_tomorrow (virgule entre plusieurs).",
+      time_key: "Par exemple start ou date.full (un point pour un champ imbriqué).",
+      price_key: "Par exemple price ou value.",
+      price_factor: "Par exemple 0,01 si l’intégration donne des centimes, 0,001 pour des €/MWh.",
       show_summary: "Désactivez pour masquer tout le texte au-dessus du graphique, ou choisissez ci-dessous les lignes à afficher.",
       show_info: "La ligne qui affiche le prix de la barre survolée ou touchée. Désactivé : la barre reste mise en évidence.",
       y_max: "Un prix plus élevé étend quand même l’échelle.",
@@ -751,6 +887,11 @@ const EDITOR_TEXTS = {
   es: {
     labels: {
       entity: "Sensor de precio",
+      source_custom: "Definir yo el formato de los datos",
+      attribute: "Atributo con la lista de precios",
+      time_key: "Campo con la hora de inicio",
+      price_key: "Campo con el precio",
+      price_factor: "Multiplicar los precios por",
       show_title: "Mostrar título",
       title: "Título",
       show_summary: "Mostrar texto encima del gráfico",
@@ -776,6 +917,11 @@ const EDITOR_TEXTS = {
     },
     helpers: {
       title: "Déjalo vacío para el título predeterminado.",
+      source_custom: "Solo hace falta si la tarjeta no muestra precios. Los formatos de Pure Energie Prices, Nord Pool, ENTSO-e y Frank Energie se reconocen automáticamente (beta).",
+      attribute: "Nombre del atributo del sensor, por ejemplo prices, o raw_today, raw_tomorrow (coma entre varios).",
+      time_key: "Por ejemplo start o date.full (un punto para un campo anidado).",
+      price_key: "Por ejemplo price o value.",
+      price_factor: "Por ejemplo 0,01 si la integración da céntimos, 0,001 para €/MWh.",
       show_summary: "Desactívalo para ocultar todo el texto encima del gráfico, o elige abajo qué líneas mostrar.",
       show_info: "La línea que muestra el precio de la barra que señalas o tocas. Desactivado: la barra se sigue resaltando.",
       y_max: "Un precio más alto amplía la escala igualmente.",
@@ -809,9 +955,24 @@ const choice = (options) => ({ select: { mode: "dropdown", options: Object.entri
 const pair = (a, b) => ({ type: "grid", name: "", schema: [a, b] });
 const colourPair = () => pair({ name: "color_low", selector: { color_rgb: {} } }, { name: "color_high", selector: { color_rgb: {} } });
 
+// The data format fields, shown only when "Set the data format myself" is on.
+function sourceFields(c) {
+  const fields = [{ name: "source_custom", selector: { boolean: {} } }];
+  if (c.source_custom) {
+    fields.push(
+      { name: "attribute", selector: { text: {} } },
+      { name: "time_key", selector: { text: {} } },
+      { name: "price_key", selector: { text: {} } },
+      { name: "price_factor", selector: { number: { min: 0, max: 1000, step: "any", mode: "box" } } }
+    );
+  }
+  return fields;
+}
+
 function editorSchema(tx, c) {
   const schema = [
     { name: "entity", required: true, selector: { entity: { domain: "sensor" } } },
+    ...sourceFields(c),
     { name: "show_title", selector: { boolean: {} } },
   ];
   if (c.show_title !== false) schema.push({ name: "title", selector: { text: {} } });
@@ -904,6 +1065,7 @@ class PriceChartCardEditor extends FormEditor {
       night_start: 22,
       night_end: 6,
       ...c,
+      source_custom: c.source_custom ?? !!(c.attribute || c.time_key || c.price_key || c.price_factor),
       fixed_scale: c.fixed_scale ?? c.y_max != null,
       block_color_custom: c.block_color_custom ?? c.block_color != null,
     };
@@ -917,6 +1079,7 @@ class PriceChartCardEditor extends FormEditor {
   // bracket colour when it is switched off, so switching it on again starts
   // from the current palette.
   normalize(c) {
+    if (!c.source_custom) for (const k of ["attribute", "time_key", "price_key", "price_factor"]) delete c[k];
     if (c.fixed_scale && c.y_max == null) c.y_max = 0.4;
     if (c.palette === "custom") {
       if (c.color_low == null) c.color_low = CUSTOM_LOW_RGB;
@@ -930,7 +1093,13 @@ class PriceChartCardEditor extends FormEditor {
 
 // Badge for the top of a dashboard view: the price now, the cheapest hour
 // still to come, the cheapest block, or the price at a chosen hour.
-const BADGE_ICONS = { now: "mdi:flash", cheapest: "mdi:arrow-down-bold-circle-outline", block: "mdi:timer-sand", at: "mdi:clock-outline" };
+const BADGE_ICONS = {
+  now: "mdi:flash",
+  cheapest: "mdi:arrow-down-bold-circle-outline",
+  block: "mdi:timer-sand",
+  at: "mdi:clock-outline",
+  average: "mdi:approximately-equal",
+};
 
 class PriceBadge extends HTMLElement {
   static getStubConfig(hass) {
@@ -951,7 +1120,7 @@ class PriceBadge extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     const state = hass.states[this._config.entity];
-    const key = (state ? state.last_updated : "missing") + "|" + new Date().getHours() + "|" + language(hass);
+    const key = (state ? state.last_updated : "missing") + "|" + Math.floor(Date.now() / 900000) + "|" + language(hass);
     if (key === this._key) return;
     this._key = key;
     this._render(state);
@@ -962,13 +1131,13 @@ class PriceBadge extends HTMLElement {
     const c = this._config;
     const t = TEXTS[language(this._hass)];
     const d = c.decimals;
-    const { nowSlot, split, bars } = priceDays(state);
+    const { nowSlot, split, bars, slotMin } = priceDays(state, c);
     const day = (time) => weekday(time, this._hass);
     // A dash while a price is not known yet; the tooltip says so in words.
     let label = "", value = "–", price = null;
 
-    // Which hours "cheapest" and "block" look at: the hours still to come
-    // (default), all of today, all of tomorrow, or both days.
+    // Which hours "cheapest", "block" and "average" look at: the hours still
+    // to come (default), all of today, all of tomorrow, or both days.
     const range = ["today", "tomorrow", "both"].includes(c.range) ? c.range : "upcoming";
     const inRange = bars.filter((b) =>
       range === "today" ? b.i < split : range === "tomorrow" ? b.i >= split : range === "both" ? true : b.i > nowSlot
@@ -984,22 +1153,32 @@ class PriceBadge extends HTMLElement {
         value = euro(price, d, language(this._hass));
       }
     } else if (c.show === "block") {
-      const blk = cheapestBlock(inRange, range === "upcoming" ? nowSlot : -1, c.block_hours || 3);
-      label = t.bBlock(blk ? blk.n : Math.round(Number(c.block_hours) || 3)) + rangeLabel;
+      const blk = cheapestBlock(inRange, range === "upcoming" ? nowSlot : -1, c.block_hours || 3, slotMin);
+      label = t.bBlock(blk ? blk.hours : Math.round(Number(c.block_hours) || 3)) + rangeLabel;
       if (blk) {
-        const endTime = new Date(blk.start.getTime() + blk.n * HOUR);
         price = blk.avg;
-        value = `${day(blk.start)} ${hh(blk.start)}–${hh(endTime)} · ${euro(price, d, language(this._hass))}`;
+        value = `${day(blk.start)} ${hh(blk.start)}–${hh(blk.end)} · ${euro(price, d, language(this._hass))}`;
+      }
+    } else if (c.show === "average") {
+      label = `${t.bAvg} ${t.ranges[range] || t.rest}`;
+      if (inRange.length) {
+        price = inRange.reduce((sum, b) => sum + b.price, 0) / inRange.length;
+        value = euro(price, d, language(this._hass));
       }
     } else if (c.show === "at") {
       // The next time the clock shows this hour: today if it has not passed
       // yet (the current hour counts), otherwise tomorrow once it is known.
+      // With quarter hours, the hour's four prices are averaged.
       const h = Math.min(Math.max(Math.round(Number(c.hour) || 0), 0), 23);
-      const next = bars.find((b) => b.i >= nowSlot && b.t.getHours() === h);
+      const hourStart = new Date();
+      hourStart.setMinutes(0, 0, 0);
+      const candidates = bars.filter((b) => b.t.getHours() === h && b.t >= hourStart);
       label = `${t.bAt} ${String(h).padStart(2, "0")}:00`;
-      if (next) {
-        label += ` (${day(next.t)})`;
-        price = next.price;
+      if (candidates.length) {
+        const first = candidates[0];
+        const same = candidates.filter((b) => b.t.toDateString() === first.t.toDateString());
+        label += ` (${day(first.t)})`;
+        price = same.reduce((sum, b) => sum + b.price, 0) / same.length;
         value = euro(price, d, language(this._hass));
       }
     } else {
@@ -1073,6 +1252,7 @@ const BADGE_EDITOR_TEXTS = {
       cheapest: "Cheapest hour",
       block: "Cheapest block of hours",
       at: "Price at a set hour",
+      average: "Average price",
     },
     range: { upcoming: "Hours still to come", today: "Today (whole day)", tomorrow: "Tomorrow (whole day)", both: "Today and tomorrow" },
   },
@@ -1106,6 +1286,7 @@ const BADGE_EDITOR_TEXTS = {
       cheapest: "Goedkoopste uur",
       block: "Goedkoopste blok uren",
       at: "Prijs op een vast uur",
+      average: "Gemiddelde prijs",
     },
     range: { upcoming: "Uren die nog komen", today: "Vandaag (hele dag)", tomorrow: "Morgen (hele dag)", both: "Vandaag en morgen" },
   },
@@ -1139,6 +1320,7 @@ const BADGE_EDITOR_TEXTS = {
       cheapest: "Günstigste Stunde",
       block: "Günstigster Stundenblock",
       at: "Preis zu einer festen Stunde",
+      average: "Durchschnittspreis",
     },
     range: { upcoming: "Kommende Stunden", today: "Heute (ganzer Tag)", tomorrow: "Morgen (ganzer Tag)", both: "Heute und morgen" },
   },
@@ -1172,6 +1354,7 @@ const BADGE_EDITOR_TEXTS = {
       cheapest: "Heure la moins chère",
       block: "Bloc d’heures le moins cher",
       at: "Prix à une heure fixe",
+      average: "Prix moyen",
     },
     range: { upcoming: "Heures à venir", today: "Aujourd’hui (toute la journée)", tomorrow: "Demain (toute la journée)", both: "Aujourd’hui et demain" },
   },
@@ -1205,6 +1388,7 @@ const BADGE_EDITOR_TEXTS = {
       cheapest: "Hora más barata",
       block: "Bloque de horas más barato",
       at: "Precio a una hora fija",
+      average: "Precio medio",
     },
     range: { upcoming: "Horas por venir", today: "Hoy (todo el día)", tomorrow: "Mañana (todo el día)", both: "Hoy y mañana" },
   },
@@ -1213,11 +1397,21 @@ const BADGE_EDITOR_TEXTS = {
 class PriceBadgeEditor extends FormEditor {
   texts(lang) {
     const card = EDITOR_TEXTS[lang], badge = BADGE_EDITOR_TEXTS[lang];
-    return { ...badge, labels: { ...card.labels, ...badge.labels }, palettes: card.palettes };
+    return { ...badge, labels: { ...card.labels, ...badge.labels }, helpers: { ...card.helpers, ...badge.helpers }, palettes: card.palettes };
   }
 
   withDefaults(c) {
-    return { show: "now", range: "upcoming", block_hours: 3, hour: 6, decimals: 2, palette: "traffic", color_steps: 3, ...c };
+    return {
+      show: "now",
+      range: "upcoming",
+      block_hours: 3,
+      hour: 6,
+      decimals: 2,
+      palette: "traffic",
+      color_steps: 3,
+      ...c,
+      source_custom: c.source_custom ?? !!(c.attribute || c.time_key || c.price_key || c.price_factor),
+    };
   }
 
   // First the choice of what to show, then only the fields that choice uses,
@@ -1226,10 +1420,11 @@ class PriceBadgeEditor extends FormEditor {
   schema(tx, c) {
     const schema = [{ name: "show", selector: choice(tx.show) }];
     if (c.show === "block") schema.push({ name: "block_hours", selector: num_(1, 12, 1) });
-    if (c.show === "cheapest" || c.show === "block") schema.push({ name: "range", selector: choice(tx.range) });
+    if (c.show === "cheapest" || c.show === "block" || c.show === "average") schema.push({ name: "range", selector: choice(tx.range) });
     if (c.show === "at") schema.push({ name: "hour", selector: num_(0, 23, 1) });
     schema.push(
       { name: "entity", required: true, selector: { entity: { domain: "sensor" } } },
+      ...sourceFields(c),
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "decimals", selector: num_(0, 4, 1) },
@@ -1243,6 +1438,7 @@ class PriceBadgeEditor extends FormEditor {
   }
 
   normalize(c) {
+    if (!c.source_custom) for (const k of ["attribute", "time_key", "price_key", "price_factor"]) delete c[k];
     if (c.palette === "custom") {
       if (c.color_low == null) c.color_low = CUSTOM_LOW_RGB;
       if (c.color_high == null) c.color_high = CUSTOM_HIGH_RGB;
