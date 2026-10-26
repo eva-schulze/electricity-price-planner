@@ -1,9 +1,10 @@
-// Energy price card and badges for Home Assistant (beta).
+// Energy price card and badges for Home Assistant.
 // Draws dynamic electricity prices for today and tomorrow as bars, per hour or
-// per quarter hour, read from the price list a price sensor keeps in its
-// attributes. Tested with Pure Energie Prices
-// (https://github.com/venraij/hacs-pure-energy-prices); the formats of Nord
-// Pool, ENTSO-e and Frank Energie are recognised from their code but untested.
+// per quarter hour. Reads the price list a sensor keeps in its attributes, or
+// asks an integration's action (EnergyZero, easyEnergy, Nord Pool, Tibber).
+// Tested on a real installation with Pure Energie Prices
+// (https://github.com/venraij/hacs-pure-energy-prices); the other formats are
+// recognised from those integrations' code and tested with sample data.
 // No external libraries, no network requests. MIT licence, see LICENSE.
 //
 // All settings can be changed in the card editor (Edit dashboard, then the
@@ -15,7 +16,14 @@
 //   time_key: start                 (optional, field with the start time; dots
 //                                    for nested fields, e.g. date.full)
 //   price_key: value                (optional, field with the price)
-//   price_factor: 0.01              (optional, e.g. for prices in cents)
+//   price_unit: auto                (optional: auto, kwh, cent or mwh)
+//   currency: auto                  (optional: auto or a code such as EUR, GBP)
+//   source: attribute               (optional: attribute, energyzero, easyenergy,
+//                                    nordpool or tibber; actions need no entity)
+//   config_entry: <id>              (for energyzero, easyenergy, nordpool)
+//   area: NL                        (nordpool: price area; tibber: home name)
+//   incl_vat: true                  (energyzero, easyenergy)
+//   price_factor: 0.0000001         (optional, YAML only, for unusual units)
 //   show_title: true                (optional, false hides the title)
 //   title: Electricity price        (optional; empty uses the default title in
 //                                    the dashboard's language)
@@ -54,7 +62,11 @@
 //   block_hours: 3                  (for show: block)
 //   hour: 6                         (for show: at; the next time it is 06:00,
 //                                    averaged over the hour for quarter hours)
-//   attribute, time_key, price_key, price_factor as for the card
+//   follow_chart: true              (optional; take colours and data settings
+//                                    from a price card on the dashboard; the
+//                                    sensor may then stay empty)
+//   attribute, time_key, price_key, price_unit, currency, source and the
+//   action settings as for the card
 //   name: Washing machine           (optional, replaces the label)
 //   icon: mdi:washing-machine       (optional)
 //   decimals, palette, color_low, color_high, color_steps as for the card;
@@ -63,7 +75,7 @@
 // Texts follow the Home Assistant language: English, Dutch, German, French or
 // Spanish (others fall back to English). Prices use that language's format.
 
-const VERSION = "2.0.0-beta.1";
+const VERSION = "2.0.0";
 const HOUR = 3600000;
 
 const TEXTS = {
@@ -87,6 +99,8 @@ const TEXTS = {
     ranges: { upcoming: "", today: "today", tomorrow: "tomorrow", both: "today + tomorrow" },
     bAvg: "Average",
     rest: "still to come",
+    loading: "Loading prices…",
+    failed: (e) => `Could not load prices: ${e}`,
   },
   nl: {
     title: "Stroomprijs",
@@ -108,6 +122,8 @@ const TEXTS = {
     ranges: { upcoming: "", today: "vandaag", tomorrow: "morgen", both: "vandaag + morgen" },
     bAvg: "Gemiddeld",
     rest: "nog te komen",
+    loading: "Prijzen laden…",
+    failed: (e) => `Prijzen konden niet worden geladen: ${e}`,
   },
   de: {
     title: "Strompreis",
@@ -129,6 +145,8 @@ const TEXTS = {
     ranges: { upcoming: "", today: "heute", tomorrow: "morgen", both: "heute + morgen" },
     bAvg: "Durchschnitt",
     rest: "noch kommend",
+    loading: "Preise werden geladen…",
+    failed: (e) => `Preise konnten nicht geladen werden: ${e}`,
   },
   fr: {
     title: "Prix de l’électricité",
@@ -150,6 +168,8 @@ const TEXTS = {
     ranges: { upcoming: "", today: "aujourd’hui", tomorrow: "demain", both: "aujourd’hui + demain" },
     bAvg: "Moyenne",
     rest: "à venir",
+    loading: "Chargement des prix…",
+    failed: (e) => `Impossible de charger les prix : ${e}`,
   },
   es: {
     title: "Precio de la electricidad",
@@ -171,6 +191,8 @@ const TEXTS = {
     ranges: { upcoming: "", today: "hoy", tomorrow: "mañana", both: "hoy + mañana" },
     bAvg: "Media",
     rest: "por venir",
+    loading: "Cargando precios…",
+    failed: (e) => `No se pudieron cargar los precios: ${e}`,
   },
 };
 
@@ -213,10 +235,10 @@ function cssColour(v, fallback) {
 }
 
 // A price in the language's own format: "€0.28", "€ 0,28", "0,28 €".
-function euro(v, decimals, lang) {
+function euro(v, decimals, lang, currency) {
   return new Intl.NumberFormat(lang || "en", {
     style: "currency",
-    currency: "EUR",
+    currency: currency || "EUR",
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(v);
@@ -234,15 +256,28 @@ function weekday(d, hass) {
   return d.toLocaleDateString(language(hass), { weekday: "short" });
 }
 
-// Price lists come in the formats of several integrations. Each entry needs a
+// Price lists come in the formats of many integrations. Each entry needs a
 // start time and a price; the first field name that is present is used. Own
 // names can be set with time_key / price_key (a dot for nested fields).
-const TIME_KEYS = ["date.full", "start", "startsAt", "from", "time", "datetime", "start_time", "date"];
-const PRICE_KEYS = ["price", "value", "total", "electricity_price", "price_tax_included.amount"];
+const TIME_KEYS = ["date.full", "start", "startsAt", "start_time", "from", "time", "timestamp", "datetime", "valid_from", "date"];
+const PRICE_KEYS = ["price", "value", "total", "value_inc_vat", "price_per_kwh", "electricity_price", "price_tax_included.amount"];
 // Attributes that hold a price list, tried in this order: Pure Energie Prices,
 // ENTSO-e and Frank Energie (prices), Nord Pool (raw_today / raw_tomorrow),
-// split lists (prices_today / prices_tomorrow), forecasts.
-const LIST_ATTRIBUTES = [["prices"], ["raw_today", "raw_tomorrow"], ["prices_today", "prices_tomorrow"], ["forecast"]];
+// split lists (prices_today / prices_tomorrow), Octopus Energy (rates), EPEX
+// Spot (data), forecasts. Spanish PVPC is read separately (price_00h …).
+const LIST_ATTRIBUTES = [["prices"], ["raw_today", "raw_tomorrow"], ["prices_today", "prices_tomorrow"], ["rates"], ["data"], ["forecast"]];
+
+// Integrations that offer prices only through an action, with the unit their
+// prices come in.
+const ACTION_SOURCES = {
+  energyzero: { service: "get_energy_prices", unit: "kwh", vat: true },
+  easyenergy: { service: "get_energy_usage_prices", unit: "kwh", vat: true },
+  nordpool: { service: "get_prices_for_date", unit: "mwh" },
+  tibber: { service: "get_prices", unit: "kwh" },
+};
+
+const UNIT_FACTORS = { kwh: 1, cent: 0.01, mwh: 0.001 };
+const CURRENCIES = ["EUR", "GBP", "SEK", "NOK", "DKK", "CHF", "PLN", "CZK", "HUF", "RON", "BGN", "USD"];
 
 function pick(obj, path) {
   return String(path).split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj);
@@ -262,27 +297,185 @@ function listNames(attrs, c) {
   return LIST_ATTRIBUTES.find((group) => group.some((n) => Array.isArray(attrs[n]))) || [];
 }
 
-// All prices of the sensor as { t, price }, sorted, one per start time.
-function readPrices(state, c = {}) {
-  const attrs = (state && state.attributes) || {};
+// Spanish PVPC keeps one attribute per hour: price_00h … price_23h for today,
+// price_02h_d for the repeated hour when the clocks go back.
+function pvpcItems(attrs) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const items = [];
+  for (const [key, value] of Object.entries(attrs)) {
+    const m = /^price_(next_day_)?(\d\d)h(_d)?$/.exec(key);
+    if (!m || typeof value !== "number") continue;
+    const t = new Date(today);
+    if (m[1]) t.setDate(t.getDate() + 1);
+    t.setHours(Number(m[2]));
+    if (m[3]) t.setTime(t.getTime() + HOUR);
+    items.push({ start: t.toISOString(), price: value });
+  }
+  return items;
+}
+
+function parseItems(items, c, factor, found) {
   const timeKeys = c.time_key ? [c.time_key] : TIME_KEYS;
   const priceKeys = c.price_key ? [c.price_key] : PRICE_KEYS;
-  const factor = Number(c.price_factor) || 1;
-  const found = new Map();
-  for (const name of listNames(attrs, c)) {
-    for (const item of Array.isArray(attrs[name]) ? attrs[name] : []) {
-      if (!item || typeof item !== "object") continue;
-      let t = null;
-      for (const k of timeKeys) if ((t = toDate(pick(item, k)))) break;
-      let price = null;
-      for (const k of priceKeys) {
-        const v = pick(item, k);
-        if (v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v))) { price = Number(v); break; }
-      }
-      if (t && price !== null) found.set(t.getTime(), { t, price: price * factor });
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    let t = null;
+    for (const k of timeKeys) if ((t = toDate(pick(item, k)))) break;
+    let price = null;
+    for (const k of priceKeys) {
+      const v = pick(item, k);
+      if (v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v))) { price = Number(v); break; }
     }
+    if (t && price !== null) found.set(t.getTime(), { t, price: price * factor });
   }
-  return [...found.values()].sort((a, b) => a.t - b.t);
+}
+
+// The unit the prices come in: chosen by the user, known for an action, or
+// read from the sensor's unit ("ct/kWh", "€/MWh", "p/kWh" …). Everything is
+// converted to the main currency unit per kWh.
+function unitFactor(c, state) {
+  let unit = c.price_unit && c.price_unit !== "auto" ? c.price_unit : null;
+  if (!unit && ACTION_SOURCES[c.source]) unit = ACTION_SOURCES[c.source].unit;
+  if (!unit) {
+    const u = String((state && state.attributes.unit_of_measurement) || "").trim().toLowerCase();
+    if (/mwh/.test(u)) unit = "mwh";
+    else if (/^(ct|c|p|cent|cents|pence|öre|øre|gr|snt)(\/|\s|$)/.test(u)) unit = "cent";
+    else unit = "kwh";
+  }
+  return (UNIT_FACTORS[unit] || 1) * (Number(c.price_factor) || 1);
+}
+
+// The currency: chosen by the user, or read from the sensor's unit, else euro.
+function currencyOf(c, state) {
+  if (c.currency && c.currency !== "auto") return c.currency;
+  const u = String((state && state.attributes.unit_of_measurement) || "");
+  const code = CURRENCIES.find((x) => u.toUpperCase().includes(x));
+  if (code) return code;
+  if (u.includes("£") || /^p\//i.test(u)) return "GBP";
+  if (u.includes("zł")) return "PLN";
+  if (u.includes("Kč")) return "CZK";
+  return "EUR";
+}
+
+function localIso(d) {
+  const p2 = (n) => String(Math.abs(n)).padStart(2, "0");
+  const off = -d.getTimezoneOffset();
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}:00` +
+    `${off >= 0 ? "+" : "-"}${p2(Math.floor(Math.abs(off) / 60))}:${p2(Math.abs(off) % 60)}`;
+}
+
+// Ask an integration's action for today's and tomorrow's prices.
+async function fetchActionItems(hass, c) {
+  const src = ACTION_SOURCES[c.source];
+  const call = async (data) =>
+    (await hass.callWS({ type: "call_service", domain: c.source, service: src.service, service_data: data, return_response: true })).response;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 2);
+  if (c.source === "nordpool") {
+    // One call per day; tomorrow fails or is empty until it is published.
+    const items = [];
+    for (const day of [0, 1]) {
+      const d = new Date(start);
+      d.setDate(d.getDate() + day);
+      const data = { config_entry: c.config_entry, date: localIso(d).slice(0, 10) };
+      if (c.area) data.areas = [c.area];
+      if (c.currency && c.currency !== "auto") data.currency = c.currency;
+      try {
+        const res = (await call(data)) || {};
+        const area = c.area && res[c.area] ? c.area : Object.keys(res)[0];
+        items.push(...(res[area] || []));
+      } catch (e) {
+        if (day === 0) throw e;
+      }
+    }
+    return items;
+  }
+  if (c.source === "tibber") {
+    const homes = ((await call({ start: localIso(start), end: localIso(end) })) || {}).prices || {};
+    const home = c.area && homes[c.area] ? c.area : Object.keys(homes)[0];
+    return homes[home] || [];
+  }
+  const data = { config_entry: c.config_entry, incl_vat: c.incl_vat !== false, start: localIso(start), end: localIso(end) };
+  return ((await call(data)) || {}).prices || [];
+}
+
+// Action prices are fetched once per source and shared by every card and
+// badge on the page; they are fetched again after 30 minutes.
+const actionCache = new Map();
+
+function actionEntry(hass, c, onUpdate) {
+  const key = JSON.stringify([c.source, c.config_entry, c.area, c.incl_vat, c.currency]);
+  let entry = actionCache.get(key);
+  if (!entry) {
+    entry = { items: [], time: 0, loading: false, error: null, version: 0, listeners: new Set() };
+    actionCache.set(key, entry);
+  }
+  if (onUpdate) entry.listeners.add(onUpdate);
+  if (!entry.loading && Date.now() - entry.time > 30 * 60000 && hass && hass.callWS) {
+    entry.loading = true;
+    entry.time = Date.now();
+    fetchActionItems(hass, c)
+      .then((items) => { entry.items = items; entry.error = null; })
+      .catch((e) => { entry.error = (e && e.message) || String(e); })
+      .finally(() => {
+        entry.loading = false;
+        entry.version++;
+        entry.listeners.forEach((f) => f());
+      });
+  }
+  return entry;
+}
+
+// All prices as { t, price } in the main currency unit per kWh, sorted, one
+// per start time, plus the state of an action fetch, if any.
+function readPrices(hass, state, c = {}, onUpdate) {
+  const factor = unitFactor(c, state);
+  const found = new Map();
+  let status = null;
+  if (ACTION_SOURCES[c.source]) {
+    const entry = actionEntry(hass, c, onUpdate);
+    parseItems(entry.items, c, factor, found);
+    status = { loading: entry.loading, error: entry.error, version: entry.version };
+  } else {
+    const attrs = (state && state.attributes) || {};
+    for (const name of listNames(attrs, c)) parseItems(Array.isArray(attrs[name]) ? attrs[name] : [], c, factor, found);
+    if (!found.size && !c.attribute) parseItems(pvpcItems(attrs), c, factor, found);
+  }
+  return { list: [...found.values()].sort((x, y) => x.t - y.t), status };
+}
+
+// A price card shares its settings, so badges can use the same colours,
+// currency, units and data source. Badges without a sensor follow the last
+// card that loaded.
+const SHARED_KEYS = [
+  "entity", "palette", "color_steps", "color_low", "color_high", "currency", "price_unit", "price_factor",
+  "source", "attribute", "time_key", "price_key", "config_entry", "area", "incl_vat", "decimals",
+];
+const sharedSettings = (window.__energyPriceSettings = window.__energyPriceSettings || { byKey: new Map(), last: null });
+
+function settingsKey(c) {
+  if (ACTION_SOURCES[c.source]) return `${c.source}:${c.config_entry || ""}:${c.area || ""}`;
+  return c.entity || "";
+}
+
+function shareSettings(c) {
+  const key = settingsKey(c);
+  if (!key) return;
+  const picked = {};
+  for (const k of SHARED_KEYS) if (c[k] != null) picked[k] = c[k];
+  sharedSettings.byKey.set(key, picked);
+  sharedSettings.last = picked;
+  window.dispatchEvent(new CustomEvent("energy-price-settings"));
+}
+
+function followedSettings(c) {
+  if (c.follow_chart === false) return c;
+  const key = settingsKey(c);
+  const shared = key ? sharedSettings.byKey.get(key) : sharedSettings.last;
+  return shared ? { ...c, ...shared } : c;
 }
 
 // The length of one price period in minutes: the most common gap between
@@ -299,8 +492,7 @@ function slotMinutes(list) {
 
 // Today and tomorrow as price periods from local midnight, with the sensor's
 // prices placed in them. Shared by the card and the badge.
-function priceDays(state, c = {}) {
-  const list = readPrices(state, c);
+function priceDays(list) {
   const slotMin = slotMinutes(list);
   const slotMs = slotMin * 60000;
   const start = new Date();
@@ -378,6 +570,8 @@ class PriceChartCard extends HTMLElement {
 
   setConfig(config) {
     this._config = { decimals: 2, height: 180, ...config };
+    shareSettings(this._config);
+    this._onPrices = this._onPrices || (() => { this._key = null; if (this._hass) this.hass = this._hass; });
     // Text size in px; the chart's labels and margins scale with it.
     this._fs = Math.min(Math.max(Number(this._config.font_size) || 14, 10), 24);
     this._k = this._fs / 14;
@@ -430,18 +624,23 @@ class PriceChartCard extends HTMLElement {
     const t = this._t || TEXTS.en;
     const state = this._state;
 
-    const { start, slots, split, nowSlot, bars, slotMin, slotMs } = priceDays(state, this._config);
+    const c = this._config;
+    const isAction = !!ACTION_SOURCES[c.source];
+    const { list, status } = readPrices(this._hass, state, c, this._onPrices);
+    this._cur = currencyOf(c, state);
+    const { start, slots, split, nowSlot, bars, slotMin, slotMs } = priceDays(list);
     this._bars = bars;
     this._slotMs = slotMs;
     this._block = cheapestBlock(bars, nowSlot, this._config.block_hours, slotMin);
 
     let body;
-    if (!this._config.entity) {
+    if (!isAction && !c.entity) {
       body = `<p class="msg">${t.choose}</p>`;
-    } else if (!state) {
-      body = `<p class="msg">${esc(t.missing(this._config.entity))}</p>`;
+    } else if (!isAction && !state) {
+      body = `<p class="msg">${esc(t.missing(c.entity))}</p>`;
     } else if (!bars.length) {
-      body = `<p class="msg">${t.empty}</p>`;
+      const msg = status && status.error ? t.failed(status.error) : status && status.loading ? t.loading : t.empty;
+      body = `<p class="msg">${esc(msg)}</p>`;
     } else {
       this._ctx = { bars, slots, split, nowSlot, start, slotMin, slotMs };
       const summary = this._config.show_summary === false ? "" : this._summary(bars, nowSlot);
@@ -526,7 +725,7 @@ class PriceChartCard extends HTMLElement {
     if (bar) bar.classList.add("sel");
     const next = new Date(b.t.getTime() + this._slotMs);
     const info = root.querySelector(".info");
-    if (info) info.innerHTML = `${esc(this._day(b.t))} ${hh(b.t)}–${hh(next)}: <b>${euro(b.price, this._config.decimals, language(this._hass))}</b>`;
+    if (info) info.innerHTML = `${esc(this._day(b.t))} ${hh(b.t)}–${hh(next)}: <b>${euro(b.price, this._config.decimals, language(this._hass), this._cur)}</b>`;
   }
 
   _summary(bars, nowSlot) {
@@ -534,15 +733,15 @@ class PriceChartCard extends HTMLElement {
     const parts = [];
     const now = bars.find((b) => b.i === nowSlot);
     const d = this._config.decimals;
-    if (now && this._config.summary_now !== false) parts.push(`<span>${t.now} <b>${euro(now.price, d, language(this._hass))}</b></span>`);
+    if (now && this._config.summary_now !== false) parts.push(`<span>${t.now} <b>${euro(now.price, d, language(this._hass), this._cur)}</b></span>`);
     const ahead = bars.filter((b) => b.i > nowSlot);
     if (ahead.length && this._config.summary_cheapest !== false) {
       const best = ahead.reduce((a, b) => (b.price < a.price ? b : a));
-      parts.push(`<span>${t.cheapest} <b>${euro(best.price, d, language(this._hass))}</b> ${t.at} <b>${this._day(best.t)} ${hh(best.t)}</b></span>`);
+      parts.push(`<span>${t.cheapest} <b>${euro(best.price, d, language(this._hass), this._cur)}</b> ${t.at} <b>${this._day(best.t)} ${hh(best.t)}</b></span>`);
     }
     const blk = this._block;
     if (blk && this._config.summary_block !== false) {
-      parts.push(`<span>${t.block(blk.hours)}: <b>${this._day(blk.start)} ${hh(blk.start)}–${hh(blk.end)}</b>, ${t.avg} <b>${euro(blk.avg, d, language(this._hass))}</b></span>`);
+      parts.push(`<span>${t.block(blk.hours)}: <b>${this._day(blk.start)} ${hh(blk.start)}–${hh(blk.end)}</b>, ${t.avg} <b>${euro(blk.avg, d, language(this._hass), this._cur)}</b></span>`);
     }
     return parts.length ? `<div class="summary">${parts.join("")}</div>` : "";
   }
@@ -615,7 +814,7 @@ class PriceChartCard extends HTMLElement {
     for (let n = 0; n <= lines; n++) {
       const v = lo + n * step;
       svg += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`;
-      svg += `<text x="${L - 4}" y="${y(v) + 4 * k}" text-anchor="end">${num(v, 2, language(this._hass))}</text>`;
+      svg += `<text x="${L - 4}" y="${y(v) + 4 * k}" text-anchor="end">${num(v, 2, language(this._hass), this._cur)}</text>`;
     }
 
     // Lines sit on hour boundaries, at the left edge of the bar that hour
@@ -680,6 +879,14 @@ const EDITOR_TEXTS = {
       time_key: "Field with the start time",
       price_key: "Field with the price",
       price_factor: "Multiply prices by",
+      advanced: "Advanced settings",
+      source: "Where the prices come from",
+      config_entry: "Integration entry",
+      area: "Area or home",
+      incl_vat: "Prices including VAT",
+      price_unit: "Unit of the prices",
+      currency: "Currency",
+      follow_chart: "Same settings as the price card",
       show_title: "Show title",
       title: "Title",
       show_summary: "Show text above the chart",
@@ -706,7 +913,14 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "The sensor of your price integration that carries the price list (for Pure Energie Prices: not the “raw” or “percentile” sensors).",
       title: "Leave empty for the default title.",
-      source_custom: "Only needed when the card shows no prices. The formats of Pure Energie Prices, Nord Pool, ENTSO-e and Frank Energie are recognised automatically (beta).",
+      source: "Most integrations keep the prices in the sensor. EnergyZero, easyEnergy, the built-in Nord Pool and Tibber only offer them through an action; choose them here.",
+      config_entry: "The set-up integration that is asked for the prices.",
+      area: "Nord Pool: the price area, for example NL or SE3 (empty: the first one). Tibber: the name of the home (empty: the first home).",
+      incl_vat: "Ask the integration for prices including VAT.",
+      price_unit: "Automatic reads the unit from the sensor. Choose cents if the prices are 100 times too high, per MWh if they are 1000 times too high.",
+      currency: "Automatic reads the currency from the sensor's unit and otherwise uses euro.",
+      follow_chart: "Takes colours, currency, units and data source from a price card on this dashboard (for the same sensor, or the last card that loaded if no sensor is chosen). Off: set them here.",
+      source_custom: "Only needed when the card shows no prices. The formats of Pure Energie Prices, Nord Pool, ENTSO-e, Frank Energie, Octopus Energy, EPEX Spot and PVPC are recognised automatically.",
       attribute: "Name of the sensor attribute, for example prices, or raw_today, raw_tomorrow (comma between several).",
       time_key: "For example start or date.full (a dot for a nested field).",
       price_key: "For example price or value.",
@@ -725,6 +939,8 @@ const EDITOR_TEXTS = {
       grey: "Simple modern grey scale",
       custom: "Custom",
     },
+    units: { auto: "Automatic", kwh: "Per kWh (for example €/kWh)", cent: "Cents per kWh (ct, p, öre)", mwh: "Per MWh" },
+    sources: { attribute: "Sensor (most integrations)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (built-in)", tibber: "Tibber" },
   },
   nl: {
     labels: {
@@ -734,6 +950,14 @@ const EDITOR_TEXTS = {
       time_key: "Veld met de begintijd",
       price_key: "Veld met de prijs",
       price_factor: "Prijzen vermenigvuldigen met",
+      advanced: "Geavanceerde instellingen",
+      source: "Waar de prijzen vandaan komen",
+      config_entry: "Integratie-item",
+      area: "Gebied of woning",
+      incl_vat: "Prijzen inclusief btw",
+      price_unit: "Eenheid van de prijzen",
+      currency: "Valuta",
+      follow_chart: "Dezelfde instellingen als de prijskaart",
       show_title: "Titel tonen",
       title: "Titel",
       show_summary: "Tekst boven de grafiek tonen",
@@ -760,7 +984,14 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "De sensor van je prijsintegratie met de prijslijst (bij Pure Energie Prices: niet de “raw”- of “percentile”-sensoren).",
       title: "Laat leeg voor de standaardtitel.",
-      source_custom: "Alleen nodig als de kaart geen prijzen toont. De formaten van Pure Energie Prices, Nord Pool, ENTSO-e en Frank Energie worden automatisch herkend (bèta).",
+      source: "De meeste integraties houden de prijzen in de sensor bij. EnergyZero, easyEnergy, de ingebouwde Nord Pool en Tibber bieden ze alleen via een actie aan; kies die hier.",
+      config_entry: "De ingestelde integratie die om de prijzen wordt gevraagd.",
+      area: "Nord Pool: het prijsgebied, bijvoorbeeld NL of SE3 (leeg: het eerste). Tibber: de naam van de woning (leeg: de eerste woning).",
+      incl_vat: "Vraag de integratie om prijzen inclusief btw.",
+      price_unit: "Automatisch leest de eenheid van de sensor. Kies centen als de prijzen 100 keer te hoog zijn, per MWh als ze 1000 keer te hoog zijn.",
+      currency: "Automatisch leest de valuta uit de eenheid van de sensor en gebruikt anders de euro.",
+      follow_chart: "Neemt kleuren, valuta, eenheden en gegevensbron over van een prijskaart op dit dashboard (voor dezelfde sensor, of de laatst geladen kaart als er geen sensor is gekozen). Uit: stel ze hier in.",
+      source_custom: "Alleen nodig als de kaart geen prijzen toont. De formaten van Pure Energie Prices, Nord Pool, ENTSO-e, Frank Energie, Octopus Energy, EPEX Spot en PVPC worden automatisch herkend.",
       attribute: "Naam van het sensorattribuut, bijvoorbeeld prices, of raw_today, raw_tomorrow (komma tussen meerdere).",
       time_key: "Bijvoorbeeld start of date.full (een punt voor een genest veld).",
       price_key: "Bijvoorbeeld price of value.",
@@ -779,6 +1010,8 @@ const EDITOR_TEXTS = {
       grey: "Eenvoudige moderne grijstinten",
       custom: "Eigen kleuren",
     },
+    units: { auto: "Automatisch", kwh: "Per kWh (bijvoorbeeld €/kWh)", cent: "Centen per kWh (ct, p, öre)", mwh: "Per MWh" },
+    sources: { attribute: "Sensor (de meeste integraties)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (ingebouwd)", tibber: "Tibber" },
   },
   de: {
     labels: {
@@ -788,6 +1021,14 @@ const EDITOR_TEXTS = {
       time_key: "Feld mit der Startzeit",
       price_key: "Feld mit dem Preis",
       price_factor: "Preise multiplizieren mit",
+      advanced: "Erweiterte Einstellungen",
+      source: "Woher die Preise kommen",
+      config_entry: "Integrationseintrag",
+      area: "Gebiet oder Zuhause",
+      incl_vat: "Preise inklusive MwSt.",
+      price_unit: "Einheit der Preise",
+      currency: "Währung",
+      follow_chart: "Gleiche Einstellungen wie die Preiskarte",
       show_title: "Titel anzeigen",
       title: "Titel",
       show_summary: "Text über dem Diagramm anzeigen",
@@ -814,7 +1055,14 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "Der Sensor deiner Preisintegration mit der Preisliste (bei Pure Energie Prices: nicht die „raw“- oder „percentile“-Sensoren).",
       title: "Leer lassen für den Standardtitel.",
-      source_custom: "Nur nötig, wenn die Karte keine Preise zeigt. Die Formate von Pure Energie Prices, Nord Pool, ENTSO-e und Frank Energie werden automatisch erkannt (Beta).",
+      source: "Die meisten Integrationen halten die Preise im Sensor. EnergyZero, easyEnergy, das eingebaute Nord Pool und Tibber bieten sie nur über eine Aktion an; hier auswählen.",
+      config_entry: "Die eingerichtete Integration, die nach den Preisen gefragt wird.",
+      area: "Nord Pool: das Preisgebiet, zum Beispiel DE-LU oder AT (leer: das erste). Tibber: der Name des Zuhauses (leer: das erste).",
+      incl_vat: "Die Integration nach Preisen inklusive MwSt. fragen.",
+      price_unit: "Automatisch liest die Einheit des Sensors. Cent wählen, wenn die Preise 100-mal zu hoch sind, pro MWh, wenn sie 1000-mal zu hoch sind.",
+      currency: "Automatisch liest die Währung aus der Einheit des Sensors und nimmt sonst Euro.",
+      follow_chart: "Übernimmt Farben, Währung, Einheiten und Datenquelle von einer Preiskarte auf diesem Dashboard (für denselben Sensor, oder die zuletzt geladene Karte, wenn kein Sensor gewählt ist). Aus: hier festlegen.",
+      source_custom: "Nur nötig, wenn die Karte keine Preise zeigt. Die Formate von Pure Energie Prices, Nord Pool, ENTSO-e, Frank Energie, Octopus Energy, EPEX Spot und PVPC werden automatisch erkannt.",
       attribute: "Name des Sensorattributs, zum Beispiel prices, oder raw_today, raw_tomorrow (Komma zwischen mehreren).",
       time_key: "Zum Beispiel start oder date.full (ein Punkt für ein verschachteltes Feld).",
       price_key: "Zum Beispiel price oder value.",
@@ -833,6 +1081,8 @@ const EDITOR_TEXTS = {
       grey: "Schlichte moderne Graustufen",
       custom: "Eigene Farben",
     },
+    units: { auto: "Automatisch", kwh: "Pro kWh (zum Beispiel €/kWh)", cent: "Cent pro kWh (ct, p, öre)", mwh: "Pro MWh" },
+    sources: { attribute: "Sensor (die meisten Integrationen)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (eingebaut)", tibber: "Tibber" },
   },
   fr: {
     labels: {
@@ -842,6 +1092,14 @@ const EDITOR_TEXTS = {
       time_key: "Champ de l’heure de début",
       price_key: "Champ du prix",
       price_factor: "Multiplier les prix par",
+      advanced: "Paramètres avancés",
+      source: "Provenance des prix",
+      config_entry: "Entrée de l’intégration",
+      area: "Zone ou logement",
+      incl_vat: "Prix TVA comprise",
+      price_unit: "Unité des prix",
+      currency: "Devise",
+      follow_chart: "Mêmes paramètres que la carte de prix",
       show_title: "Afficher le titre",
       title: "Titre",
       show_summary: "Afficher le texte au-dessus du graphique",
@@ -868,7 +1126,14 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "Le capteur de votre intégration de prix qui contient la liste des prix (pour Pure Energie Prices : pas les capteurs « raw » ou « percentile »).",
       title: "Laissez vide pour le titre par défaut.",
-      source_custom: "Nécessaire seulement si la carte n’affiche aucun prix. Les formats de Pure Energie Prices, Nord Pool, ENTSO-e et Frank Energie sont reconnus automatiquement (bêta).",
+      source: "La plupart des intégrations gardent les prix dans le capteur. EnergyZero, easyEnergy, Nord Pool intégré et Tibber ne les proposent que via une action ; choisissez-les ici.",
+      config_entry: "L’intégration configurée à laquelle les prix sont demandés.",
+      area: "Nord Pool : la zone de prix, par exemple FR ou SE3 (vide : la première). Tibber : le nom du logement (vide : le premier).",
+      incl_vat: "Demander à l’intégration les prix TVA comprise.",
+      price_unit: "Automatique lit l’unité du capteur. Choisissez centimes si les prix sont 100 fois trop élevés, par MWh s’ils sont 1000 fois trop élevés.",
+      currency: "Automatique lit la devise dans l’unité du capteur, sinon l’euro.",
+      follow_chart: "Reprend couleurs, devise, unités et source des données d’une carte de prix de ce tableau de bord (même capteur, ou la dernière carte chargée si aucun capteur n’est choisi). Désactivé : réglez-les ici.",
+      source_custom: "Nécessaire seulement si la carte n’affiche aucun prix. Les formats de Pure Energie Prices, Nord Pool, ENTSO-e, Frank Energie, Octopus Energy, EPEX Spot et PVPC sont reconnus automatiquement.",
       attribute: "Nom de l’attribut du capteur, par exemple prices, ou raw_today, raw_tomorrow (virgule entre plusieurs).",
       time_key: "Par exemple start ou date.full (un point pour un champ imbriqué).",
       price_key: "Par exemple price ou value.",
@@ -887,6 +1152,8 @@ const EDITOR_TEXTS = {
       grey: "Niveaux de gris simples et modernes",
       custom: "Couleurs personnalisées",
     },
+    units: { auto: "Automatique", kwh: "Par kWh (par exemple €/kWh)", cent: "Centimes par kWh (ct, p, öre)", mwh: "Par MWh" },
+    sources: { attribute: "Capteur (la plupart des intégrations)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (intégré)", tibber: "Tibber" },
   },
   es: {
     labels: {
@@ -896,6 +1163,14 @@ const EDITOR_TEXTS = {
       time_key: "Campo con la hora de inicio",
       price_key: "Campo con el precio",
       price_factor: "Multiplicar los precios por",
+      advanced: "Ajustes avanzados",
+      source: "De dónde vienen los precios",
+      config_entry: "Entrada de la integración",
+      area: "Zona o vivienda",
+      incl_vat: "Precios con IVA",
+      price_unit: "Unidad de los precios",
+      currency: "Moneda",
+      follow_chart: "Mismos ajustes que la tarjeta de precios",
       show_title: "Mostrar título",
       title: "Título",
       show_summary: "Mostrar texto encima del gráfico",
@@ -922,7 +1197,14 @@ const EDITOR_TEXTS = {
     helpers: {
       entity: "El sensor de tu integración de precios con la lista de precios (en Pure Energie Prices: no los sensores «raw» ni «percentile»).",
       title: "Déjalo vacío para el título predeterminado.",
-      source_custom: "Solo hace falta si la tarjeta no muestra precios. Los formatos de Pure Energie Prices, Nord Pool, ENTSO-e y Frank Energie se reconocen automáticamente (beta).",
+      source: "La mayoría de las integraciones guardan los precios en el sensor. EnergyZero, easyEnergy, Nord Pool integrado y Tibber solo los ofrecen mediante una acción; elígelos aquí.",
+      config_entry: "La integración configurada a la que se piden los precios.",
+      area: "Nord Pool: la zona de precios, por ejemplo ES o SE3 (vacío: la primera). Tibber: el nombre de la vivienda (vacío: la primera).",
+      incl_vat: "Pedir a la integración los precios con IVA.",
+      price_unit: "Automático lee la unidad del sensor. Elige céntimos si los precios salen 100 veces altos, por MWh si salen 1000 veces altos.",
+      currency: "Automático lee la moneda de la unidad del sensor; si no, usa el euro.",
+      follow_chart: "Toma colores, moneda, unidades y fuente de datos de una tarjeta de precios de este panel (del mismo sensor, o la última tarjeta cargada si no eliges sensor). Desactivado: ajústalos aquí.",
+      source_custom: "Solo hace falta si la tarjeta no muestra precios. Los formatos de Pure Energie Prices, Nord Pool, ENTSO-e, Frank Energie, Octopus Energy, EPEX Spot y PVPC se reconocen automáticamente.",
       attribute: "Nombre del atributo del sensor, por ejemplo prices, o raw_today, raw_tomorrow (coma entre varios).",
       time_key: "Por ejemplo start o date.full (un punto para un campo anidado).",
       price_key: "Por ejemplo price o value.",
@@ -941,6 +1223,8 @@ const EDITOR_TEXTS = {
       grey: "Escala de grises sencilla y moderna",
       custom: "Colores propios",
     },
+    units: { auto: "Automático", kwh: "Por kWh (por ejemplo €/kWh)", cent: "Céntimos por kWh (ct, p, öre)", mwh: "Por MWh" },
+    sources: { attribute: "Sensor (la mayoría de integraciones)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (integrado)", tibber: "Tibber" },
   },
 };
 
@@ -961,25 +1245,50 @@ const pair = (a, b) => ({ type: "grid", name: "", schema: [a, b] });
 const colourPair = () => pair({ name: "color_low", selector: { color_rgb: {} } }, { name: "color_high", selector: { color_rgb: {} } });
 
 // The data format fields, shown only when "Set the data format myself" is on.
+// (A factor for unusual units, price_factor, can be set in YAML.)
 function sourceFields(c) {
   const fields = [{ name: "source_custom", selector: { boolean: {} } }];
   if (c.source_custom) {
     fields.push(
       { name: "attribute", selector: { text: {} } },
       { name: "time_key", selector: { text: {} } },
-      { name: "price_key", selector: { text: {} } },
-      { name: "price_factor", selector: { number: { min: 0, max: 1000, step: "any", mode: "box" } } }
+      { name: "price_key", selector: { text: {} } }
     );
   }
   return fields;
 }
 
-function editorSchema(tx, c) {
-  const schema = [
-    { name: "entity", required: true, selector: { entity: { domain: "sensor" } } },
-    ...sourceFields(c),
-    { name: "show_title", selector: { boolean: {} } },
+function currencyOptions(lang, tx) {
+  const names = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames([lang], { type: "currency" }) : null;
+  return [
+    { value: "auto", label: tx.units.auto },
+    ...CURRENCIES.map((code) => ({ value: code, label: `${names ? names.of(code) : code} (${code})` })),
   ];
+}
+
+// "Advanced settings": folded away at the bottom of the form. Where the
+// prices come from, their unit and currency, plus `extra` fields.
+function advancedSection(tx, c, lang, extra = []) {
+  const fields = [{ name: "source", selector: choice(tx.sources) }];
+  if (ACTION_SOURCES[c.source]) {
+    if (c.source !== "tibber") fields.push({ name: "config_entry", selector: { config_entry: { integration: c.source } } });
+    if (c.source === "nordpool" || c.source === "tibber") fields.push({ name: "area", selector: { text: {} } });
+    if (ACTION_SOURCES[c.source].vat) fields.push({ name: "incl_vat", selector: { boolean: {} } });
+  } else {
+    fields.push(...sourceFields(c));
+  }
+  fields.push(
+    { name: "price_unit", selector: choice(tx.units) },
+    { name: "currency", selector: { select: { mode: "dropdown", options: currencyOptions(lang, tx) } } },
+    ...extra
+  );
+  return { type: "expandable", name: "advanced", title: tx.labels.advanced, flatten: true, schema: fields };
+}
+
+function editorSchema(tx, c, lang) {
+  const schema = [];
+  if (!ACTION_SOURCES[c.source]) schema.push({ name: "entity", required: true, selector: { entity: { domain: "sensor" } } });
+  schema.push({ name: "show_title", selector: { boolean: {} } });
   if (c.show_title !== false) schema.push({ name: "title", selector: { text: {} } });
   schema.push({ name: "show_summary", selector: { boolean: {} } });
   if (c.show_summary !== false) {
@@ -990,12 +1299,8 @@ function editorSchema(tx, c) {
     { name: "height", selector: num_(80, 600, 10, "px") },
     { name: "fixed_scale", selector: { boolean: {} } }
   );
-  if (c.fixed_scale) schema.push({ name: "y_max", selector: num_(0.05, 2, 0.01, "€/kWh") });
-  schema.push(
-    { name: "decimals", selector: num_(0, 4, 1) },
-    { name: "font_size", selector: num_(10, 24, 1, "px") },
-    { name: "palette", selector: choice(tx.palettes) }
-  );
+  if (c.fixed_scale) schema.push({ name: "y_max", selector: num_(0.05, 100, 0.01, "/kWh") });
+  schema.push({ name: "palette", selector: choice(tx.palettes) });
   if (c.palette === "custom") schema.push(colourPair());
   schema.push({ name: "color_steps", selector: num_(2, 6, 1) }, { name: "block_hours", selector: num_(0, 12, 1) });
   if (Number(c.block_hours) > 0) {
@@ -1007,7 +1312,25 @@ function editorSchema(tx, c) {
   if (c.night_shading !== false) {
     schema.push(pair({ name: "night_start", selector: num_(0, 23, 1) }, { name: "night_end", selector: num_(0, 23, 1) }));
   }
+  schema.push(
+    advancedSection(tx, c, lang, [
+      { name: "decimals", selector: num_(0, 4, 1) },
+      { name: "font_size", selector: num_(10, 24, 1, "px") },
+    ])
+  );
   return schema;
+}
+
+// Drop settings that belong to another data source, so switching source
+// leaves no stale values behind.
+function cleanSource(c) {
+  if (!c.source_custom) for (const k of ["attribute", "time_key", "price_key"]) delete c[k];
+  if (!ACTION_SOURCES[c.source]) for (const k of ["config_entry", "area", "incl_vat"]) delete c[k];
+  else for (const k of ["source_custom", "attribute", "time_key", "price_key"]) delete c[k];
+  if (!ACTION_SOURCES[c.source] || !ACTION_SOURCES[c.source].vat) delete c.incl_vat;
+  if (c.source === "attribute") delete c.source;
+  if (c.price_unit === "auto") delete c.price_unit;
+  if (c.currency === "auto") delete c.currency;
 }
 
 // A settings form drawn with Home Assistant's own form element. Subclasses say
@@ -1042,7 +1365,7 @@ class FormEditor extends HTMLElement {
     this._form.computeLabel = (s) => tx.labels[s.name] || s.name;
     this._form.computeHelper = (s) => tx.helpers[s.name];
     this._form.hass = this._hass;
-    this._form.schema = this.schema(tx, data);
+    this._form.schema = this.schema(tx, data, language(this._hass));
     this._form.data = data;
   }
 }
@@ -1069,22 +1392,26 @@ class PriceChartCardEditor extends FormEditor {
       night_shading: true,
       night_start: 22,
       night_end: 6,
+      source: "attribute",
+      price_unit: "auto",
+      currency: "auto",
+      incl_vat: true,
       ...c,
-      source_custom: c.source_custom ?? !!(c.attribute || c.time_key || c.price_key || c.price_factor),
+      source_custom: c.source_custom ?? !!(c.attribute || c.time_key || c.price_key),
       fixed_scale: c.fixed_scale ?? c.y_max != null,
       block_color_custom: c.block_color_custom ?? c.block_color != null,
     };
   }
 
-  schema(tx, c) {
-    return editorSchema(tx, c);
+  schema(tx, c, lang) {
+    return editorSchema(tx, c, lang);
   }
 
   // Fill in a sensible start value when a field appears, and forget the
   // bracket colour when it is switched off, so switching it on again starts
   // from the current palette.
   normalize(c) {
-    if (!c.source_custom) for (const k of ["attribute", "time_key", "price_key", "price_factor"]) delete c[k];
+    cleanSource(c);
     if (c.fixed_scale && c.y_max == null) c.y_max = 0.4;
     if (c.palette === "custom") {
       if (c.color_low == null) c.color_low = CUSTOM_LOW_RGB;
@@ -1116,15 +1443,24 @@ class PriceBadge extends HTMLElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("Set 'entity' to the price sensor");
     this._config = { show: "now", range: "upcoming", decimals: 2, block_hours: 3, hour: 6, ...config };
     this._key = null;
+    this._onPrices = this._onPrices || (() => { this._key = null; if (this._hass) this.hass = this._hass; });
     if (this._hass) this.hass = this._hass;
+  }
+
+  connectedCallback() {
+    // Redraw when a price card shares new settings.
+    window.addEventListener("energy-price-settings", this._onPrices);
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener("energy-price-settings", this._onPrices);
   }
 
   set hass(hass) {
     this._hass = hass;
-    const state = hass.states[this._config.entity];
+    const state = hass.states[followedSettings(this._config).entity];
     const key = (state ? state.last_updated : "missing") + "|" + Math.floor(Date.now() / 900000) + "|" + language(hass);
     if (key === this._key) return;
     this._key = key;
@@ -1133,10 +1469,13 @@ class PriceBadge extends HTMLElement {
 
   _render(state) {
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
-    const c = this._config;
+    const c = followedSettings(this._config);
     const t = TEXTS[language(this._hass)];
     const d = c.decimals;
-    const { nowSlot, split, bars, slotMin } = priceDays(state, c);
+    const isAction = !!ACTION_SOURCES[c.source];
+    const { list, status } = readPrices(this._hass, state, c, this._onPrices);
+    this._cur = currencyOf(c, state);
+    const { nowSlot, split, bars, slotMin } = priceDays(list);
     const day = (time) => weekday(time, this._hass);
     // A dash while a price is not known yet; the tooltip says so in words.
     let label = "", value = "–", price = null;
@@ -1155,20 +1494,20 @@ class PriceBadge extends HTMLElement {
         const best = inRange.reduce((a, b) => (b.price < a.price ? b : a));
         label += ` · ${day(best.t)} ${hh(best.t)}`;
         price = best.price;
-        value = euro(price, d, language(this._hass));
+        value = euro(price, d, language(this._hass), this._cur);
       }
     } else if (c.show === "block") {
       const blk = cheapestBlock(inRange, range === "upcoming" ? nowSlot : -1, c.block_hours || 3, slotMin);
       label = t.bBlock(blk ? blk.hours : Math.round(Number(c.block_hours) || 3)) + rangeLabel;
       if (blk) {
         price = blk.avg;
-        value = `${day(blk.start)} ${hh(blk.start)}–${hh(blk.end)} · ${euro(price, d, language(this._hass))}`;
+        value = `${day(blk.start)} ${hh(blk.start)}–${hh(blk.end)} · ${euro(price, d, language(this._hass), this._cur)}`;
       }
     } else if (c.show === "average") {
       label = `${t.bAvg} ${t.ranges[range] || t.rest}`;
       if (inRange.length) {
         price = inRange.reduce((sum, b) => sum + b.price, 0) / inRange.length;
-        value = euro(price, d, language(this._hass));
+        value = euro(price, d, language(this._hass), this._cur);
       }
     } else if (c.show === "at") {
       // The next time the clock shows this hour: today if it has not passed
@@ -1184,18 +1523,21 @@ class PriceBadge extends HTMLElement {
         const same = candidates.filter((b) => b.t.toDateString() === first.t.toDateString());
         label += ` (${day(first.t)})`;
         price = same.reduce((sum, b) => sum + b.price, 0) / same.length;
-        value = euro(price, d, language(this._hass));
+        value = euro(price, d, language(this._hass), this._cur);
       }
     } else {
       label = t.bNow;
       const now = bars.find((b) => b.i === nowSlot);
       if (now) {
         price = now.price;
-        value = euro(price, d, language(this._hass));
+        value = euro(price, d, language(this._hass), this._cur);
       }
     }
     if (typeof c.name === "string" && c.name.trim()) label = c.name.trim();
-    if (!state) value = t.missing(c.entity);
+    let note = price == null ? t.unknown : value;
+    if (!isAction && !c.entity) note = t.choose;
+    else if (!isAction && !state) value = note = t.missing(c.entity);
+    else if (status && status.error) note = t.failed(status.error);
 
     // The icon takes the colour of the price, compared with all prices known.
     let colour = "var(--secondary-text-color)";
@@ -1219,7 +1561,7 @@ class PriceBadge extends HTMLElement {
         .label { font-size: 10px; font-weight: 500; color: var(--secondary-text-color); }
         .value { font-size: 12px; font-weight: 500; color: var(--primary-text-color); }
       </style>
-      <div class="badge" title="${esc(label)}: ${esc(price == null ? t.unknown : value)}">
+      <div class="badge" title="${esc(label)}: ${esc(note)}">
         <ha-icon icon="${esc(icon)}" style="color: ${esc(colour)}"></ha-icon>
         <div class="text"><span class="label">${esc(label)}</span><span class="value">${esc(value)}</span></div>
       </div>`;
@@ -1243,7 +1585,7 @@ const BADGE_EDITOR_TEXTS = {
       range: "Only the hours still to come, all of today, all of tomorrow, or both days. Tomorrow's prices usually arrive in the afternoon; until then the badge shows a dash.",
       block_hours: "1 to 12 consecutive hours, for example 3 for a washing machine programme. The badge shows when the block starts and ends, and its average price.",
       hour: "0 to 23. The badge shows the price for the next time the clock reaches this hour: today if it has not passed yet, otherwise tomorrow once that price is known. Example: 6 shows the price from 06:00 to 07:00.",
-      entity: "The sensor of your price integration that carries the price list (for Pure Energie Prices: not the “raw” or “percentile” sensors).",
+      entity: "Leave empty to use the sensor of the price card on this dashboard.",
       name: "The small text above the price. Leave empty for the automatic text, for example “Cheapest 3 h”.",
       icon: "Leave empty for the automatic icon.",
       decimals: "Digits after the decimal point, 0 to 4.",
@@ -1277,7 +1619,7 @@ const BADGE_EDITOR_TEXTS = {
       range: "Alleen de uren die nog komen, heel vandaag, heel morgen of beide dagen. De prijzen van morgen komen meestal in de middag; tot dan toont de badge een streepje.",
       block_hours: "1 tot 12 aaneengesloten uren, bijvoorbeeld 3 voor een wasprogramma. De badge toont begin en einde van het blok en de gemiddelde prijs.",
       hour: "0 tot 23. De badge toont de prijs voor de eerstvolgende keer dat de klok dit uur bereikt: vandaag als het nog niet voorbij is, anders morgen zodra die prijs bekend is. Voorbeeld: 6 toont de prijs van 06:00 tot 07:00.",
-      entity: "De sensor van je prijsintegratie met de prijslijst (bij Pure Energie Prices: niet de “raw”- of “percentile”-sensoren).",
+      entity: "Laat leeg om de sensor van de prijskaart op dit dashboard te gebruiken.",
       name: "De kleine tekst boven de prijs. Laat leeg voor de automatische tekst, bijvoorbeeld „Goedkoopste 3 uur”.",
       icon: "Laat leeg voor het automatische pictogram.",
       decimals: "Cijfers achter de komma, 0 tot 4.",
@@ -1311,7 +1653,7 @@ const BADGE_EDITOR_TEXTS = {
       range: "Nur die kommenden Stunden, den ganzen heutigen Tag, den ganzen morgigen Tag oder beide Tage. Die Preise für morgen kommen meist am Nachmittag; bis dahin zeigt das Badge einen Strich.",
       block_hours: "1 bis 12 aufeinanderfolgende Stunden, zum Beispiel 3 für ein Waschprogramm. Das Badge zeigt Beginn und Ende des Blocks und den Durchschnittspreis.",
       hour: "0 bis 23. Das Badge zeigt den Preis für das nächste Mal, wenn die Uhr diese Stunde erreicht: heute, wenn sie noch nicht vorbei ist, sonst morgen, sobald der Preis bekannt ist. Beispiel: 6 zeigt den Preis von 06:00 bis 07:00.",
-      entity: "Der Sensor deiner Preisintegration mit der Preisliste (bei Pure Energie Prices: nicht die „raw“- oder „percentile“-Sensoren).",
+      entity: "Leer lassen, um den Sensor der Preiskarte auf diesem Dashboard zu verwenden.",
       name: "Der kleine Text über dem Preis. Leer lassen für den automatischen Text, zum Beispiel „Günstigste 3 Std.“.",
       icon: "Leer lassen für das automatische Symbol.",
       decimals: "Nachkommastellen, 0 bis 4.",
@@ -1345,7 +1687,7 @@ const BADGE_EDITOR_TEXTS = {
       range: "Seulement les heures à venir, toute la journée d’aujourd’hui, toute celle de demain, ou les deux. Les prix de demain arrivent en général l’après-midi ; d’ici là, le badge affiche un tiret.",
       block_hours: "1 à 12 heures consécutives, par exemple 3 pour un programme de lave-linge. Le badge affiche le début et la fin du bloc et son prix moyen.",
       hour: "0 à 23. Le badge affiche le prix pour la prochaine fois que l’horloge atteint cette heure : aujourd’hui si elle n’est pas encore passée, sinon demain dès que ce prix est connu. Exemple : 6 affiche le prix de 06:00 à 07:00.",
-      entity: "Le capteur de votre intégration de prix qui contient la liste des prix (pour Pure Energie Prices : pas les capteurs « raw » ou « percentile »).",
+      entity: "Laissez vide pour utiliser le capteur de la carte de prix de ce tableau de bord.",
       name: "Le petit texte au-dessus du prix. Laissez vide pour le texte automatique, par exemple « 3 h les moins chères ».",
       icon: "Laissez vide pour l’icône automatique.",
       decimals: "Chiffres après la virgule, 0 à 4.",
@@ -1379,7 +1721,7 @@ const BADGE_EDITOR_TEXTS = {
       range: "Solo las horas que quedan, todo el día de hoy, todo el de mañana o ambos días. Los precios de mañana suelen llegar por la tarde; hasta entonces la insignia muestra un guion.",
       block_hours: "De 1 a 12 horas seguidas, por ejemplo 3 para un programa de lavadora. La insignia muestra el inicio y el fin del bloque y su precio medio.",
       hour: "De 0 a 23. La insignia muestra el precio de la próxima vez que el reloj llegue a esta hora: hoy si aún no ha pasado, si no mañana en cuanto se conozca ese precio. Ejemplo: 6 muestra el precio de 06:00 a 07:00.",
-      entity: "El sensor de tu integración de precios con la lista de precios (en Pure Energie Prices: no los sensores «raw» ni «percentile»).",
+      entity: "Déjalo vacío para usar el sensor de la tarjeta de precios de este panel.",
       name: "El texto pequeño encima del precio. Déjalo vacío para el texto automático, por ejemplo «3 h más baratas».",
       icon: "Déjalo vacío para el icono automático.",
       decimals: "Cifras después de la coma, de 0 a 4.",
@@ -1402,7 +1744,12 @@ const BADGE_EDITOR_TEXTS = {
 class PriceBadgeEditor extends FormEditor {
   texts(lang) {
     const card = EDITOR_TEXTS[lang], badge = BADGE_EDITOR_TEXTS[lang];
-    return { ...badge, labels: { ...card.labels, ...badge.labels }, helpers: { ...card.helpers, ...badge.helpers }, palettes: card.palettes };
+    return {
+      ...card,
+      ...badge,
+      labels: { ...card.labels, ...badge.labels },
+      helpers: { ...card.helpers, ...badge.helpers },
+    };
   }
 
   withDefaults(c) {
@@ -1411,39 +1758,49 @@ class PriceBadgeEditor extends FormEditor {
       range: "upcoming",
       block_hours: 3,
       hour: 6,
+      follow_chart: true,
       decimals: 2,
       palette: "traffic",
       color_steps: 3,
+      source: "attribute",
+      price_unit: "auto",
+      currency: "auto",
+      incl_vat: true,
       ...c,
-      source_custom: c.source_custom ?? !!(c.attribute || c.time_key || c.price_key || c.price_factor),
+      source_custom: c.source_custom ?? !!(c.attribute || c.time_key || c.price_key),
     };
   }
 
   // First the choice of what to show, then only the fields that choice uses,
   // then the general fields. Each field on its own row, so its help text sits
-  // right below it.
-  schema(tx, c) {
+  // right below it. Colours and data settings come from the price card unless
+  // "Same settings as the price card" is off.
+  schema(tx, c, lang) {
     const schema = [{ name: "show", selector: choice(tx.show) }];
     if (c.show === "block") schema.push({ name: "block_hours", selector: num_(1, 12, 1) });
     if (c.show === "cheapest" || c.show === "block" || c.show === "average") schema.push({ name: "range", selector: choice(tx.range) });
     if (c.show === "at") schema.push({ name: "hour", selector: num_(0, 23, 1) });
+    if (!ACTION_SOURCES[c.source]) schema.push({ name: "entity", selector: { entity: { domain: "sensor" } } });
     schema.push(
-      { name: "entity", required: true, selector: { entity: { domain: "sensor" } } },
-      ...sourceFields(c),
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
-      { name: "decimals", selector: num_(0, 4, 1) },
-      { name: "palette", selector: choice(tx.palettes) }
+      { name: "follow_chart", selector: { boolean: {} } }
     );
-    if (c.palette === "custom") {
-      schema.push({ name: "color_low", selector: { color_rgb: {} } }, { name: "color_high", selector: { color_rgb: {} } });
+    if (c.follow_chart === false) {
+      schema.push({ name: "palette", selector: choice(tx.palettes) });
+      if (c.palette === "custom") {
+        schema.push({ name: "color_low", selector: { color_rgb: {} } }, { name: "color_high", selector: { color_rgb: {} } });
+      }
+      schema.push(
+        { name: "color_steps", selector: num_(2, 6, 1) },
+        advancedSection(tx, c, lang, [{ name: "decimals", selector: num_(0, 4, 1) }])
+      );
     }
-    schema.push({ name: "color_steps", selector: num_(2, 6, 1) });
     return schema;
   }
 
   normalize(c) {
-    if (!c.source_custom) for (const k of ["attribute", "time_key", "price_key", "price_factor"]) delete c[k];
+    cleanSource(c);
     if (c.palette === "custom") {
       if (c.color_low == null) c.color_low = CUSTOM_LOW_RGB;
       if (c.color_high == null) c.color_high = CUSTOM_HIGH_RGB;
