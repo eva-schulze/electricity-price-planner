@@ -1,101 +1,115 @@
 # Electricity Price Planner
 
-Plan your power use around dynamic electricity prices. A Home Assistant card
-and badges that show the energy prices of a dynamic tariff for **today and
-tomorrow**, per hour or per quarter hour, and find the cheapest hours: for the
-washing machine, the dishwasher or charging the car. Home Assistant's built-in
-charts only show history, so they cannot show the prices still to come.
+**See when electricity is cheap today and tomorrow, and plan your washing
+machine, dishwasher or car charging around it.**
 
-It works with the price integrations of many suppliers and markets, such as
-Tibber, Octopus Energy, Frank Energie, Pure Energie, Nord Pool, ENTSO-e, EPEX
-Spot, EnergyZero and easyEnergy. See the list at the end.
+A card and badges for Home Assistant dashboards that show the prices of a
+dynamic electricity tariff for today and tomorrow, find the cheapest hours,
+and show how well you used them. It works with the price integrations of many
+suppliers and markets: Tibber, Octopus Energy, Frank Energie, Pure Energie,
+Nord Pool, ENTSO-e, EPEX Spot, EnergyZero, easyEnergy and
+[more](#supported-price-integrations).
 
-> **Feedback welcome.** I could only test version 2 on my own installation,
-> with Pure Energie Prices. The other integrations are recognised from their
-> code and were tested with sample data. If you use one of them, please open
-> an issue and say whether the prices look right. Version 1.1.0 supports Pure
-> Energie Prices only.
+![Electricity Price Planner: price chart and badges with sample prices](images/screenshot.png)
 
-![Electricity Price Planner with sample prices](images/screenshot.png)
+*Price chart and badges, with made-up sample prices.*
 
-*Screenshot with made-up sample prices.*
+**Contents:**
+[Why](#why) ·
+[Quick start](#quick-start) ·
+[What's included](#whats-included) ·
+[Installation](#installation) ·
+[Configuration](#configuration) ·
+[Tips](#tips-and-troubleshooting) ·
+[Feedback and support](#feedback-and-support) ·
+[Supported price integrations](#supported-price-integrations)
 
-> This is a community project. It is not made by, endorsed by or affiliated with
-> any energy supplier or with the authors of the price integrations.
+## Why
 
-## Features
+With a dynamic tariff the price changes every hour, or even every quarter
+hour, and the cheapest hours can cost a fraction of the most expensive ones.
+Home Assistant's built-in charts only show the past. This card shows what is
+still to come:
 
-**Price chart**
+- **See the prices ahead:** today and tomorrow as coloured bars, from cheap to
+  expensive.
+- **Plan:** the cheapest block of hours is marked, optionally within your own
+  time window, for example overnight.
+- **Know at a glance:** badges at the top of your dashboard show the price
+  now, where it is heading, and what a run of your washing machine costs now
+  and at the best moment.
+- **Learn:** the usage card colours your own use by price and gives you a
+  score for your timing.
 
-- Bars from midnight today to midnight tomorrow, per hour, half hour or
-  quarter hour. Tomorrow fills in as soon as the prices are published (usually
-  in the afternoon).
-- Hover over, tap or drag across the bars to see the exact price below the
-  chart. Works on touchscreens.
-- Colours relative to the prices shown, in 2 to 6 steps.
-- Colour palettes: green – orange – red, blue – orange for red-green colour
-  blindness, a simple modern grey scale, or your own two colours (the steps in
-  between are blended automatically).
-- Past hours faded, the current hour outlined.
-- Price lines every 5 cents, or a multiple of 5 cents when the chart is low.
-- Optional: negative prices in their own colour, with a line at zero.
-- Optional: a dashed line at each day's average price.
-- Optional: night hours shaded.
-- Optional: fixed top of the scale, so you can compare days at a glance.
-- Optional: compact mode, only the bars, for small cards.
-- Optional: feed-in mode for solar panels, as a separate chart. High prices
-  are good there, so the colours turn around and the card looks for the
-  highest prices.
+## Quick start
 
-**Planning**
+1. Make sure a price integration is set up in Home Assistant (see
+   [supported price integrations](#supported-price-integrations)).
+2. Install the card with HACS (see [Installation](#installation)).
+3. **Edit dashboard → Add card → Electricity Price Planner card** and choose
+   your price sensor. That is all the card needs.
+4. Optional: add badges (**Add badge → Electricity Price Planner badge**) and
+   the usage card. They take their settings from the price card.
 
-- Optional: text above the chart, each line on or off: the price now, the
-  cheapest hour still to come, and the cheapest block.
-- Optional: cheapest block of N hours, marked with a bracket in the chart,
-  for example the best 3 hours for the washing machine.
-- Optional: only within set hours, for example a block that must start after
-  22:00 and be finished by 07:00.
+Every setting can be changed in the card's settings form; YAML is optional.
 
-**Badges** for the top of a dashboard:
+## What's included
 
-- Price now, next price (trend), price at a set hour.
-- Cheapest hour, highest price, average price: still to come, today,
-  tomorrow, or both days. With "today" this gives the day's minimum and
-  maximum.
-- Cheapest block of hours, optionally within set hours.
-- Negative prices: how many hours, and when they start.
-- Cost of an appliance: what one run costs now and at the cheapest start,
-  from the energy per run and its duration (for example a washing machine).
+### Price card
 
-**Usage card** (optional, a separate card):
+- Bars for today and tomorrow, per hour, half hour or quarter hour. Tomorrow
+  fills in as soon as the prices are published, usually in the afternoon.
+- Hover over, tap or drag across the bars to see the exact price of a period.
+- The cheapest block of hours marked with a bracket, for example the best 3
+  hours for the washing machine, optionally within set hours.
+- A short text above the chart: the price now, the cheapest hour still to
+  come and the cheapest block. Each line can be switched off.
+- Optional: negative prices in their own colour, an average line per day,
+  shaded night hours, a fixed scale to compare days, and a compact mode with
+  only the bars.
+- Feed-in mode for solar panels: high prices are good there, so the colours
+  turn around and the card looks for the highest prices.
 
-- Your electricity use per hour as bars, each coloured by the price of that
-  hour, for today so far or yesterday.
-- The average price you paid, compared with the day's average and the best
-  possible price.
-- A score from 0 to 100 for how well your use was timed.
+### Badges
 
-**General**
+Small badges for the top of a dashboard. Each badge shows one thing:
 
-- Settings form in the dashboard editor, grouped in folding sections.
-- English, Dutch, German, French and Spanish, following the language of your
-  Home Assistant user (other languages fall back to English). Prices use that
-  language's format, for example `€0.28`, `€ 0,28` or `0,28 €`.
-- Prices in euro, pound, Swedish, Norwegian or Danish krone, Swiss franc,
-  Polish złoty and more; read from the sensor or chosen by hand.
-- Width via the Layout tab in sections dashboards; adjustable chart height.
-- Follows your Home Assistant theme, light and dark.
+| Badge | Shows |
+|---|---|
+| Price now | The current price. |
+| Next price (trend) | The next price, with ↑, ↓ or →. |
+| Price at a set hour | For example always the price at 06:00. |
+| Cheapest hour | Still to come, today, tomorrow or both. With "today": the day's minimum. |
+| Highest price | The same, for the most expensive hour: the day's maximum. |
+| Average price | The average of the hours you choose. |
+| Cheapest block of hours | When to start, for example 3 hours, optionally within set hours. |
+| Negative prices | How many hours are below zero, and when they start. |
+| Cost of an appliance | What one run costs now and at the cheapest start, for example a washing machine. |
+
+### Usage card
+
+Your electricity use per hour, each bar coloured by the price of that hour,
+for today so far or yesterday. Above it: the average price you paid, the
+day's average and the best possible price, and a score from 0 to 100 for your
+timing.
+
+### For everyone
+
+- English, Dutch, German, French and Spanish, following your Home Assistant
+  language. Prices in that language's format, for example `€0.28` or
+  `0,28 €`.
+- Euro, pound, Swedish, Norwegian and Danish krone, Swiss franc, Polish złoty
+  and more, read from the sensor or chosen by hand.
+- Colour palettes including one for red-green colour blindness, a simple
+  modern grey scale, and your own colours.
+- Follows your theme, light and dark, and works on phones and tablets.
 - One JavaScript file, no external libraries, no network requests of its own.
 
-## Requirements
-
-- Home Assistant 2024.11 or newer.
-- A price integration with the prices for today and tomorrow (see
-  [Supported price integrations](#supported-price-integrations)).
-- For the usage card: an energy meter in kWh, for example the one in the
-  Energy dashboard.
-
 ## Installation
+
+Requirements: Home Assistant 2024.11 or newer, and a
+[price integration](#supported-price-integrations). For the usage card: an
+energy meter in kWh, for example the one in the Energy dashboard.
 
 ### HACS (recommended)
 
@@ -117,45 +131,43 @@ Spot, EnergyZero and easyEnergy. See the list at the end.
 4. Reload the browser. After replacing the file with a newer version, raise
    `?v=1` to `?v=2` and so on, or the browser keeps the old one.
 
-## Price card
+## Configuration
 
-**Edit dashboard → Add card**, search for **Electricity Price Planner card**.
-The settings form opens. Or use **Manual** with YAML:
+All settings are in the settings forms of the card, badge and usage card. The
+tables below list them with their YAML names, in the same order and groups as
+the forms.
+
+### Price card
 
 ```yaml
 type: custom:electricity-price-planner-card
 entity: sensor.pure_energie_electricity_import
 ```
 
-Choose the sensor of your integration that carries the price list. Your
-entity ID may differ; check it under **Settings → Devices & services →
-Entities**, where the sensor's attributes show the list. For EnergyZero,
-easyEnergy, the built-in Nord Pool and Tibber, open **Advanced settings** and
-choose the integration under **Where the prices come from**; no sensor is
-needed then.
-
-The form shows the essentials on top and the rest in folding sections. The
-options, in the same groups:
+Choose the sensor of your integration that carries the price list; under
+**Settings → Devices & services → Entities** its attributes show the list.
+For EnergyZero, easyEnergy, the built-in Nord Pool and Tibber, open
+**Advanced settings** and choose the integration under **Where the prices
+come from**; no sensor is needed then.
 
 | Option | Default | Description |
 |---|---|---|
 | `entity` | *(required for sensors)* | The price sensor. |
 | `mode` | `purchase` | `purchase` or `feed_in` (high prices are good: colours turned around, highest prices searched). |
-| `show_title` | `true` | Set to `false` to hide the title. |
-| `title` | in the dashboard's language | Card title. Empty uses the default. |
+| `show_title`, `title` | on, in your language | The card title. An empty title uses the default. |
 | **Text** | | |
 | `show_summary` | `true` | Text above the chart. |
 | `summary_now`, `summary_cheapest`, `summary_block` | `true` | Single lines of that text. |
 | `show_info` | `true` | The price line below the chart. |
 | **Chart** | | |
 | `height` | `180` | Chart height in pixels. With a fixed height on the Layout tab, the chart fills that height instead. |
-| `compact` | `false` | Only the bars, without price and hour labels. |
+| `compact` | `false` | Only the bars, without price and hour labels. For small cards. |
 | `fixed_scale`, `y_max` | off | Fixed top of the scale per kWh, for example `0.40`. A higher price still stretches the scale. |
 | `show_average` | `false` | A dashed line at each day's average price. |
-| `highlight_negative` | `true` | Negative prices in their own colour (purple). |
+| `highlight_negative` | `true` | Negative prices in their own colour (purple), with a line at zero. |
 | `night_shading`, `night_start`, `night_end` | on, `22`, `6` | Shaded night hours (`night_end` included). |
 | **Colours** | | |
-| `palette` | `traffic` | `traffic`, `colorblind` (blue – orange), `grey` (simple modern grey scale) or `custom`. |
+| `palette` | `traffic` | `traffic` (green – orange – red), `colorblind` (blue – orange), `grey` (simple modern grey scale) or `custom`. |
 | `color_low`, `color_high` | blue, orange | Your own colours with `palette: custom`. A CSS colour or `[r, g, b]`. |
 | `color_steps` | `3` | Number of colour bands, 2 to 6. |
 | **Cheapest block** | | |
@@ -164,7 +176,7 @@ options, in the same groups:
 | `block_color` | colour of the cheapest prices | Colour of the bracket. |
 | **Advanced settings** | | |
 | `source` | `attribute` | `attribute` (a sensor), or an action: `energyzero`, `easyenergy`, `nordpool`, `tibber`. |
-| `config_entry` | – | For `energyzero`, `easyenergy`, `nordpool`: the integration entry (chosen from a list in the form). |
+| `config_entry` | – | For `energyzero`, `easyenergy`, `nordpool`: the integration entry (a list in the form). |
 | `area` | first | `nordpool`: the price area, for example `NL` or `SE3`. `tibber`: the name of the home. |
 | `incl_vat` | `true` | `energyzero`, `easyenergy`: prices including VAT. |
 | `attribute`, `time_key`, `price_key` | found automatically | Your own data format: the attribute with the list (several separated by commas), the field with the start time (a dot for nested fields) and the field with the price. |
@@ -174,20 +186,7 @@ options, in the same groups:
 | `font_size` | `14` | Text size in pixels, 10 to 24. |
 | `price_factor` | `1` | YAML only: multiply all prices, for unusual units. |
 
-If the prices are 100 or 1000 times too high, set the unit to cents or per
-MWh. If the card shows "No prices available yet" although the sensor has a
-price list, switch on **Set the data format myself** and fill in the
-attribute and field names.
-
-For feed-in prices, add a second price card with your integration's feed-in
-sensor and set **Prices shown** to **Feed-in price**.
-
-## Badges
-
-In the dashboard editor, add a badge and choose **Electricity Price Planner
-badge**, or add it in YAML under the view's `badges:`. A badge takes its
-colours, currency, unit and data source from a price card on the same
-dashboard, so the sensor can stay empty:
+### Badges
 
 ```yaml
 badges:
@@ -198,9 +197,12 @@ badges:
     name: Washing machine
 ```
 
+A badge takes its colours, currency, unit and data source from a price card
+on the same dashboard, so the sensor can stay empty.
+
 | Option | Default | Description |
 |---|---|---|
-| `show` | `now` | `now`, `trend` (next price), `at` (price at a set hour), `cheapest`, `highest`, `average`, `block`, `negative` or `appliance`. |
+| `show` | `now` | `now`, `trend`, `at`, `cheapest`, `highest`, `average`, `block`, `negative` or `appliance` (see [Badges](#badges)). |
 | `range` | `upcoming` | For `cheapest`, `highest`, `average`, `block`, `negative`: `upcoming`, `today`, `tomorrow` or `both`. |
 | `block_hours` | `3` | For `block`: hours in the block. |
 | `appliance_kwh`, `appliance_hours` | `1`, `2` | For `appliance`: energy per run and its duration. |
@@ -213,14 +215,11 @@ badges:
 While a price is not known yet (for example tomorrow's prices in the morning),
 a badge shows a dash; hover over it to read "not known yet".
 
-## Usage card
-
-**Add card → Electricity Price Planner usage**:
+### Usage card
 
 ```yaml
 type: custom:electricity-price-planner-usage-card
 energy_entity: sensor.electricity_meter_energy
-day: today
 ```
 
 | Option | Default | Description |
@@ -231,46 +230,57 @@ day: today
 | `height` | `160` | Chart height in pixels. |
 | `follow_chart` | `true` | Prices and colours from the price card on the dashboard; switch off to set them on this card. |
 
-## How the prices are shown
+## Tips and troubleshooting
 
-- The card shows the prices the integration provides. Market-price
-  integrations (ENTSO-e, Nord Pool, EPEX Spot, EnergyZero …) usually show the
-  market price, without your supplier's surcharges and taxes, unless you
-  configure those in the integration. The colours and the cheapest hours are
-  the same either way.
-- Colours split the price range shown (today and, once known, tomorrow) into
-  equal bands. They say how an hour compares with the other hours shown, not
-  whether a day is cheap; use a fixed scale for that.
-- The cheapest block starts after the current hour (or quarter hour) and only
-  uses prices that are known, so it can move once tomorrow's prices arrive.
-- Times are shown in the time zone of the device viewing the dashboard.
-- The version is printed in the browser console when the card loads, which
-  helps when reporting a problem.
+- **Prices 100 or 1000 times too high:** the integration gives cents or
+  prices per MWh. Set **Unit of the prices** under Advanced settings.
+- **"No prices available yet" although the sensor has a price list:** switch
+  on **Set the data format myself** under Advanced settings and fill in the
+  attribute and field names.
+- **Tomorrow is empty:** tomorrow's prices are usually published in the
+  afternoon; the chart fills in by itself.
+- **Feed-in prices:** add a second price card with your integration's feed-in
+  sensor and set **Prices shown** to **Feed-in price**.
+- **Market prices:** integrations such as ENTSO-e, Nord Pool, EPEX Spot or
+  EnergyZero usually give the market price, without your supplier's
+  surcharges and taxes, unless you add them in the integration. The colours
+  and the cheapest hours are the same either way.
+- **What the colours mean:** they compare each period with the other periods
+  shown, not with other days. To compare days, use a fixed scale.
+- **Times** are shown in the time zone of the device viewing the dashboard.
+- **Reporting a problem:** the version is printed in the browser console when
+  the card loads; please mention it.
 
 ## Privacy
 
-The card itself makes no network requests. It reads your own Home Assistant:
-the price sensor, an integration's price action, and for the usage card the
-recorder statistics of your energy meter. Fetching the prices from the
-internet is done by your price integration.
+The card itself makes no network requests. It only reads your own Home
+Assistant: the price sensor, an integration's price action and, for the usage
+card, the recorder statistics of your energy meter. Fetching the prices from
+the internet is done by your price integration.
 
-## Roadmap
+## Feedback and support
 
-- **Notifications**, for example when the cheapest block starts. This needs a
-  Home Assistant automation (a blueprint), not the card, and is planned.
-- More integrations on request.
+**Tested:** I could only test version 2 on my own installation, with Pure
+Energie Prices. The other integrations are recognised from their code and
+were tested with sample data. If you use one of them, please open an issue and
+say whether the prices look right. Version 1.1.0 supports Pure Energie Prices
+only.
 
-## Support and suggestions
-
-I maintain this card in my free time. I'll try to help, but answers can take a
-while, and there is no guaranteed support. The card is provided as is, without
-warranty. You're welcome to:
+**Support:** I maintain this card in my free time. I'll try to help, but
+answers can take a while, and there is no guaranteed support. The card is
+provided as is, without warranty. You're welcome to:
 
 - report a problem or suggest an improvement by opening an issue;
 - send a change as a pull request;
 - use the code as the basis for your own version (MIT licence).
 
 Suggestions that help others too, I'll try to add to the project.
+
+**Roadmap:**
+
+- Notifications, for example when the cheapest block starts. This needs a
+  Home Assistant automation (a blueprint), not the card, and is planned.
+- More integrations on request.
 
 ## Supported price integrations
 
@@ -303,4 +313,6 @@ you can, what the price sensor's attributes look like.
 
 ## Licence
 
-[MIT](LICENSE)
+[MIT](LICENSE). This is a community project. It is not made by, endorsed by or
+affiliated with any energy supplier or with the authors of the price
+integrations.
