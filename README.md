@@ -1,7 +1,8 @@
 # Pure Energie Price Card
 
-A Home Assistant dashboard card that shows the hourly electricity prices of a
-Pure Energie dynamic contract for **today and tomorrow** as a bar chart.
+A Home Assistant dashboard card and badges that show the hourly electricity
+prices of a Pure Energie dynamic contract for **today and tomorrow**: a bar
+chart, plus badges for the top of a dashboard.
 
 It reads the price list from the
 [Pure Energie Prices](https://github.com/venraij/hacs-pure-energy-prices)
@@ -19,15 +20,18 @@ cannot show the prices still to come.
 
 - Hourly bars from midnight today to midnight tomorrow. Tomorrow fills in as
   soon as Pure Energie publishes the prices (usually in the afternoon).
+- Hover over, tap or drag across the bars to see the exact price of an hour
+  below the chart. Works on touchscreens.
 - Colours relative to the prices shown: by default green for the cheapest
   third of the price range, orange for the middle, red for the most expensive
   third. Choose 2 to 6 colour steps for a coarser or more gradual scale.
 - Colour palettes: green – orange – red, **blue – orange for red-green colour
-  blindness**, grey scale, or your own two colours (the steps in between are
-  blended automatically).
-- Past hours faded, the current hour outlined, night hours shaded.
-- **Now** price and **Cheapest still to come** (price, day and hour) above the
-  chart.
+  blindness**, a simple modern grey scale, or your own two colours (the steps
+  in between are blended automatically).
+- Past hours faded, the current hour outlined, night hours shaded (optional).
+- Text above the chart, each line optional: the **price now**, the
+  **cheapest hour still to come** (price, day and hour) and the
+  **cheapest block**.
 - Optional **cheapest block of N hours**, for example the best 3 hours for the
   washing machine, marked with a bracket in the chart.
 - **Badges** for the top of a dashboard: price now, cheapest hour, cheapest
@@ -35,8 +39,6 @@ cannot show the prices still to come.
 - English, Dutch, German, French and Spanish, following the language of your
   Home Assistant user (other languages fall back to English). Prices use that
   language's format, for example `€0.28`, `€ 0,28` or `0,28 €`.
-- Hover over, tap or drag across the bars to see the exact price of an hour
-  below the chart. Works on touchscreens.
 - Price lines every 5 cents, or a multiple of 5 cents when the chart is low.
 - Optional fixed top of the scale, so you can compare days at a glance.
 - Settings form in the dashboard editor, like Home Assistant's own cards.
@@ -103,7 +105,7 @@ services → Entities**.
 | `fixed_scale` | on if `y_max` is set | Use `y_max` as the top of the scale. |
 | `y_max` | – | Top of the scale in €/kWh, for example `0.40`. A higher price still stretches the scale, so no bar is cut off. |
 | `decimals` | `2` | Decimals for prices in the text above and below the chart. |
-| `palette` | `traffic` | `traffic` (green – orange – red), `colorblind` (blue – orange), `grey` (minimal and elegant), or `custom`. |
+| `palette` | `traffic` | `traffic` (green – orange – red), `colorblind` (blue – orange), `grey` (simple modern grey scale), or `custom`. |
 | `color_low` | `#0072b2` | Colour for the cheapest prices with `palette: custom`. A CSS colour or `[r, g, b]`. |
 | `color_high` | `#e69f00` | Colour for the most expensive prices with `palette: custom`. |
 | `color_steps` | `3` | Number of colour bands, 2 to 6. |

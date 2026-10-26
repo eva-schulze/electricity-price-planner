@@ -615,7 +615,7 @@ const EDITOR_TEXTS = {
     palettes: {
       traffic: "Green – orange – red",
       colorblind: "Blue – orange (colour-blind friendly)",
-      grey: "Grey scale (minimal and elegant)",
+      grey: "Simple modern grey scale",
       custom: "Custom",
     },
   },
@@ -658,7 +658,7 @@ const EDITOR_TEXTS = {
     palettes: {
       traffic: "Groen – oranje – rood",
       colorblind: "Blauw – oranje (geschikt bij kleurenblindheid)",
-      grey: "Grijstinten (minimalistisch en stijlvol)",
+      grey: "Eenvoudige moderne grijstinten",
       custom: "Eigen kleuren",
     },
   },
@@ -701,7 +701,7 @@ const EDITOR_TEXTS = {
     palettes: {
       traffic: "Grün – Orange – Rot",
       colorblind: "Blau – Orange (für Farbenblinde geeignet)",
-      grey: "Graustufen (minimalistisch und elegant)",
+      grey: "Schlichte moderne Graustufen",
       custom: "Eigene Farben",
     },
   },
@@ -744,7 +744,7 @@ const EDITOR_TEXTS = {
     palettes: {
       traffic: "Vert – orange – rouge",
       colorblind: "Bleu – orange (adapté au daltonisme)",
-      grey: "Niveaux de gris (minimaliste et élégant)",
+      grey: "Niveaux de gris simples et modernes",
       custom: "Couleurs personnalisées",
     },
   },
@@ -787,7 +787,7 @@ const EDITOR_TEXTS = {
     palettes: {
       traffic: "Verde – naranja – rojo",
       colorblind: "Azul – naranja (apto para daltonismo)",
-      grey: "Escala de grises (minimalista y elegante)",
+      grey: "Escala de grises sencilla y moderna",
       custom: "Colores propios",
     },
   },
