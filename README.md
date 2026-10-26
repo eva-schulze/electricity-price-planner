@@ -1,17 +1,16 @@
-# Pure Energie Price Card – beta for more integrations
+# Pure Energie Price Card
 
 A Home Assistant dashboard card and badges that show dynamic electricity
 prices for **today and tomorrow**, per hour or per quarter hour: a bar chart,
 plus badges for the top of a dashboard. Home Assistant's built-in charts only
 show history, so they cannot show the prices still to come.
 
-> **This is a beta (pre-release).** It reads the price lists of several
-> integrations and supports quarter-hour prices. I have only tested it myself
-> with the Pure Energie Prices integration. The other formats are recognised
-> from those integrations' code and were tested with sample data, not with
-> real installations. If you try it, please open an issue saying which
-> integration you use and whether the prices look right. For the tested
-> version, use release 1.1.0 (Pure Energie Prices only).
+> **Version 2 works with many price integrations, but I could only test it on
+> my own installation with Pure Energie Prices.** The other formats are
+> recognised from those integrations' code and were tested with sample data.
+> Feedback is very welcome: open an issue saying which integration you use and
+> whether the prices look right. Version 1.1.0 supports Pure Energie Prices
+> only.
 
 ![Pure Energie Price Card with sample prices](images/screenshot.png)
 
@@ -55,20 +54,26 @@ show history, so they cannot show the prices still to come.
 ## Requirements
 
 - Home Assistant 2024.11 or newer.
-- A price integration that keeps the prices for today and tomorrow as a list
-  in a sensor attribute:
+- A price integration with the prices for today and tomorrow:
 
-| Integration | Status in this beta |
-|---|---|
-| [Pure Energie Prices](https://github.com/venraij/hacs-pure-energy-prices) 0.2.4 or newer | Tested by me |
-| [Nord Pool](https://github.com/custom-components/nordpool) | Recognised automatically, not tested |
-| [ENTSO-e](https://github.com/JaccoR/hass-entso-e) | Recognised automatically, not tested |
-| [Frank Energie](https://github.com/HiDiHo01/home-assistant-frank_energie) | Recognised automatically, not tested |
-| Other integrations with a price list in an attribute | Set the data format yourself (see Options) |
+| Integration | How the card gets the prices | Status |
+|---|---|---|
+| [Pure Energie Prices](https://github.com/venraij/hacs-pure-energy-prices) 0.2.4+ | sensor attribute | Tested by me |
+| [Nord Pool (custom)](https://github.com/custom-components/nordpool) | sensor attribute | Not tested yet |
+| [ENTSO-e](https://github.com/JaccoR/hass-entso-e) | sensor attribute | Not tested yet |
+| [Frank Energie](https://github.com/HiDiHo01/home-assistant-frank_energie) | sensor attribute | Not tested yet |
+| [Octopus Energy](https://github.com/BottlecapDave/HomeAssistant-OctopusEnergy) | sensor attribute | Not tested yet |
+| [EPEX Spot](https://github.com/mampfes/ha_epex_spot) | sensor attribute | Not tested yet |
+| PVPC (built-in, Spain) | sensor attribute | Not tested yet |
+| EnergyZero (built-in) | action | Not tested yet |
+| easyEnergy (built-in) | action | Not tested yet |
+| Nord Pool (built-in) | action | Not tested yet |
+| Tibber (built-in) | action | Not tested yet |
+| Other integrations with a price list in an attribute | sensor attribute, own field names | – |
 
-Integrations that only offer prices through an action, not in an attribute,
-do not work with this card. As far as I know, that includes the built-in
-EnergyZero, easyEnergy and Tibber integrations.
+Prices per hour, half hour or quarter hour all work. The unit (per kWh, cents
+or per MWh) and the currency are read from the sensor where possible and can
+be set by hand.
 
 ## Installation
 
@@ -107,15 +112,25 @@ Energie Prices that is the plain price sensor (not the "raw" or "percentile"
 sensors). Your entity ID may differ; check it under **Settings → Devices &
 services → Entities**, where the sensor's attributes show the list.
 
+For EnergyZero, easyEnergy, the built-in Nord Pool and Tibber, open
+**Advanced settings** at the bottom of the form and choose the integration
+under **Where the prices come from**; no sensor is needed then.
+
 ## Options
 
 | Option | Default | Description |
 |---|---|---|
 | `entity` | *(required)* | The price sensor. |
+| `source` | `attribute` | `attribute` (a sensor), or an action: `energyzero`, `easyenergy`, `nordpool`, `tibber`. |
+| `config_entry` | – | For `energyzero`, `easyenergy` and `nordpool`: the integration entry (chosen from a list in the form). |
+| `area` | first | `nordpool`: the price area, for example `NL` or `SE3`. `tibber`: the name of the home. |
+| `incl_vat` | `true` | `energyzero` and `easyenergy`: prices including VAT. |
 | `attribute` | found automatically | Attribute with the price list. Several separated by commas, for example `raw_today, raw_tomorrow`. |
 | `time_key` | found automatically | Field with the start time in each entry. A dot for nested fields, for example `date.full`. |
 | `price_key` | found automatically | Field with the price, for example `price` or `value`. |
-| `price_factor` | `1` | Multiply all prices, for example `0.01` for cents or `0.001` for €/MWh. |
+| `price_unit` | `auto` | `auto` (from the sensor), `kwh` (for example €/kWh), `cent` (ct, p, öre per kWh) or `mwh` (per MWh). |
+| `currency` | `auto` | `auto` (from the sensor, else euro) or a code such as `EUR`, `GBP`, `SEK`, `NOK`, `DKK`, `CHF`, `PLN`. |
+| `price_factor` | `1` | YAML only: multiply all prices, for unusual units. |
 | `show_title` | `true` | Set to `false` to hide the title. |
 | `title` | `Electricity price` / `Stroomprijs` | Card title. Empty uses the default in the dashboard's language. |
 | `show_summary` | `true` | Set to `false` to hide all text above the chart. |
@@ -136,11 +151,12 @@ services → Entities**, where the sensor's attributes show the list.
 | `night_start` | `22` | First hour with night shading. |
 | `night_end` | `6` | Last hour with night shading (included). |
 
-If the card shows prices that are 100 or 1000 times too high, the
-integration gives cents or €/MWh: set `price_factor`. If it shows "No prices
-available yet" although the sensor has a price list, set `attribute`,
-`time_key` and `price_key` yourself. The settings form has a switch for this:
-**Set the data format myself**.
+Where the prices come from, their unit and currency, the number of decimals
+and the text size are under **Advanced settings**, folded away at the bottom
+of the form. If the prices are 100 or 1000 times too high, set the unit to
+cents or per MWh. If the card shows "No prices available yet" although the
+sensor has a price list, switch on **Set the data format myself** and fill in
+the attribute and field names.
 
 Example:
 
@@ -176,15 +192,15 @@ badges:
 
 | Option | Default | Description |
 |---|---|---|
-| `entity` | *(required)* | The price sensor. |
+| `entity` | from the price card | The price sensor. Can stay empty when a price card is on the dashboard. |
 | `show` | `now` | `now` (price now), `cheapest` (cheapest hour), `block` (cheapest run of hours), `average` (average price) or `at` (price at a set hour). |
 | `range` | `upcoming` | For `cheapest`, `block` and `average`: `upcoming` (hours still to come), `today` (whole day), `tomorrow` (whole day) or `both`. |
 | `block_hours` | `3` | Hours in the block, 1 to 12. |
 | `hour` | `6` | For `at`: the hour to show. The badge shows the next time the clock reaches it: today if it has not passed yet, otherwise tomorrow once that price is known. With quarter-hour prices, the hour's four prices are averaged. |
-| `attribute`, `time_key`, `price_key`, `price_factor` | as for the card | Only needed if the format is not recognised. |
+| `follow_chart` | `true` | Take colours, currency, unit and data source from a price card on the dashboard: the one for the same sensor, or the last one that loaded if the badge has no sensor. Switch off to set them on the badge. |
 | `name` | automatic | Replaces the label. |
 | `icon` | per type | Any `mdi:` icon. |
-| `decimals`, `palette`, `color_low`, `color_high`, `color_steps` | as for the card | The icon takes the colour of the price, compared with all known prices. |
+| `decimals`, `palette`, `color_low`, `color_high`, `color_steps`, `source`, `price_unit`, `currency` and the other data settings | as for the card | Used when `follow_chart` is off. The icon takes the colour of the price, compared with all known prices. |
 
 While a price is not known yet (for example tomorrow's prices in the morning),
 a badge shows a dash; hover over it to read "not known yet".
