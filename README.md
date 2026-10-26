@@ -1,4 +1,4 @@
-# Pure Energie Price Card
+# Electricity Price Planner
 
 A Home Assistant dashboard card and badges that show the hourly electricity
 prices of a Pure Energie dynamic contract for **today and tomorrow**: a bar
@@ -9,7 +9,7 @@ It reads the price list from the
 custom integration. Home Assistant's built-in charts only show history, so they
 cannot show the prices still to come.
 
-![Pure Energie Price Card with sample prices](images/screenshot.png)
+![Electricity Price Planner with sample prices](images/screenshot.png)
 
 *Screenshot with made-up sample prices.*
 
@@ -61,30 +61,30 @@ with other price integrations such as EnergyZero, easyEnergy or Nord Pool.
 ### HACS (recommended)
 
 1. In HACS, open the three-dot menu → **Custom repositories**.
-2. Repository: `https://github.com/eva-schulze/pure-energie-price-card`,
+2. Repository: `https://github.com/eva-schulze/electricity-price-planner`,
    type: **Dashboard**. Click **Add**.
-3. Search for **Pure Energie Price Card** and download it.
+3. Search for **Electricity Price Planner** and download it.
 4. Reload the browser (Ctrl+F5 / Cmd+Shift+R).
 
 ### Manual
 
-1. Copy `pure-energie-price-card.js` to the `www` folder of your Home Assistant
+1. Copy `electricity-price-planner.js` to the `www` folder of your Home Assistant
    configuration (create the folder if needed, then restart Home Assistant
    once).
 2. Turn on **Advanced mode** in your user profile.
 3. Go to **Settings → Dashboards → three-dot menu → Resources → Add resource**:
-   - URL: `/local/pure-energie-price-card.js?v=1`
+   - URL: `/local/electricity-price-planner.js?v=1`
    - Resource type: **JavaScript module**
 4. Reload the browser. After replacing the file with a newer version, raise
    `?v=1` to `?v=2` and so on, or the browser keeps the old one.
 
 ## Adding the card
 
-**Edit dashboard → Add card**, search for **Pure Energie price card**. The
+**Edit dashboard → Add card**, search for **Electricity Price Planner card**. The
 settings form opens. Or use **Manual** with YAML:
 
 ```yaml
-type: custom:pure-energie-price-card
+type: custom:electricity-price-planner-card
 entity: sensor.pure_energie_electricity_import
 ```
 
@@ -120,7 +120,7 @@ services → Entities**.
 Example:
 
 ```yaml
-type: custom:pure-energie-price-card
+type: custom:electricity-price-planner-card
 entity: sensor.pure_energie_electricity_import
 title: Stroomprijs
 height: 240
@@ -136,12 +136,12 @@ night_end: 6
 ## Badges
 
 The same file also provides a badge for the top of a dashboard view. In the
-dashboard editor, add a badge and choose **Pure Energie price badge**, or add
+dashboard editor, add a badge and choose **Electricity Price Planner badge**, or add
 it in YAML under the view's `badges:`:
 
 ```yaml
 badges:
-  - type: custom:pure-energie-price-badge
+  - type: custom:electricity-price-planner-badge
     entity: sensor.pure_energie_electricity_import
     show: block
     block_hours: 3
