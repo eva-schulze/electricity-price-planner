@@ -345,7 +345,14 @@ function cssColour(v, fallback) {
 }
 
 // A price in the language's own format: "€0.28", "€ 0,28", "0,28 €".
+// Rounds first, so a tiny negative price shows as 0.00, not -0.00.
+function rounded(v, decimals) {
+  const r = Number(v.toFixed(decimals));
+  return r === 0 ? 0 : r;
+}
+
 function euro(v, decimals, lang, currency) {
+  v = rounded(v, decimals);
   return new Intl.NumberFormat(lang || "en", {
     style: "currency",
     currency: currency || "EUR",
@@ -355,6 +362,7 @@ function euro(v, decimals, lang, currency) {
 }
 
 function num(v, decimals, lang) {
+  v = rounded(v, decimals);
   return new Intl.NumberFormat(lang || "en", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(v);
 }
 
