@@ -156,20 +156,21 @@ badges:
 | `range` | `upcoming` | For `cheapest` and `block`: `upcoming` (hours still to come), `today` (whole day), `tomorrow` (whole day) or `both`. |
 | `block_hours` | `3` | Hours in the block, 1 to 12. |
 | `hour` | `6` | For `at`: the hour to show. The badge shows the next time the clock reaches it: today if it has not passed yet, otherwise tomorrow once that price is known. |
-
-While a price is not known yet (for example tomorrow's prices in the morning),
-a badge shows a dash; hover over it to read "not known yet".
 | `name` | automatic | Replaces the label. |
 | `icon` | per type | Any `mdi:` icon. |
 | `decimals`, `palette`, `color_low`, `color_high`, `color_steps` | as for the card | The icon takes the colour of the price, compared with all known prices. |
+
+While a price is not known yet (for example tomorrow's prices in the morning),
+a badge shows a dash; hover over it to read "not known yet".
 
 ## How the prices are shown
 
 - The card shows exactly the prices the integration provides, including any
   added costs you configured there. It does not calculate anything itself.
 - Colours split the price range shown (today and, once known, tomorrow) into
-  equal bands (three by default, see `color_steps`). They say how an hour compares with the other hours shown,
-  not whether a day is cheap; use `y_max` for that.
+  equal bands (three by default, see `color_steps`). They say how an hour
+  compares with the other hours shown, not whether a day is cheap; use `y_max`
+  for that.
 - The cheapest block starts after the current hour and only uses hours whose
   prices are known, so it can move once tomorrow's prices arrive.
 - Times are shown in the time zone of the device viewing the dashboard.
@@ -182,10 +183,17 @@ The card makes no network requests. It only reads the price sensor from your
 own Home Assistant. Fetching the prices from Pure Energie is done by the
 integration, not by this card.
 
-## Support
+## Support and suggestions
 
-This card is provided as is, without warranty. Issues and pull requests are
-welcome, but responses may take time.
+I maintain this card in my free time. I'll try to help, but answers can take a
+while, and there is no guaranteed support. The card is provided as is, without
+warranty. You're welcome to:
+
+- report a problem or suggest an improvement by opening an issue;
+- send a change as a pull request;
+- use the code as the basis for your own version (MIT licence).
+
+Suggestions that help others too, I'll try to add to the project.
 
 ## Licence
 
