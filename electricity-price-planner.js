@@ -1,4 +1,4 @@
-// Energy price card and badges for Home Assistant.
+// Electricity Price Planner: card and badges for Home Assistant.
 // Draws dynamic electricity prices for today and tomorrow as bars, per hour or
 // per quarter hour. Reads the price list a sensor keeps in its attributes, or
 // asks an integration's action (EnergyZero, easyEnergy, Nord Pool, Tibber).
@@ -9,7 +9,7 @@
 //
 // All settings can be changed in the card editor (Edit dashboard, then the
 // card's pencil), or in YAML:
-//   type: custom:pure-energie-price-card
+//   type: custom:electricity-price-planner-card
 //   entity: sensor.pure_energie_electricity_import
 //   attribute: prices               (optional; normally found automatically.
 //                                    Several: "raw_today, raw_tomorrow")
@@ -54,7 +54,7 @@
 // Width: in a sections dashboard, use the card's Layout tab.
 //
 // The same file also provides a badge for the top of a dashboard view:
-//   type: custom:pure-energie-price-badge
+//   type: custom:electricity-price-planner-badge
 //   entity: sensor.pure_energie_electricity_import
 //   show: now                       (now, cheapest, block, at or average)
 //   range: upcoming                 (for cheapest, block and average: upcoming,
@@ -557,7 +557,7 @@ function bandColour(c, f) {
 
 class PriceChartCard extends HTMLElement {
   static getConfigElement() {
-    return document.createElement("pure-energie-price-card-editor");
+    return document.createElement("electricity-price-planner-card-editor");
   }
 
   static getStubConfig(hass) {
@@ -1439,7 +1439,7 @@ class PriceBadge extends HTMLElement {
   }
 
   static getConfigElement() {
-    return document.createElement("pure-energie-price-badge-editor");
+    return document.createElement("electricity-price-planner-badge-editor");
   }
 
   setConfig(config) {
@@ -1812,25 +1812,25 @@ class PriceBadgeEditor extends FormEditor {
 // Each element is guarded, so loading the file twice (for example manually
 // and via HACS) does not break the dashboard.
 for (const [name, cls] of [
-  ["pure-energie-price-card", PriceChartCard],
-  ["pure-energie-price-card-editor", PriceChartCardEditor],
-  ["pure-energie-price-badge", PriceBadge],
-  ["pure-energie-price-badge-editor", PriceBadgeEditor],
+  ["electricity-price-planner-card", PriceChartCard],
+  ["electricity-price-planner-card-editor", PriceChartCardEditor],
+  ["electricity-price-planner-badge", PriceBadge],
+  ["electricity-price-planner-badge-editor", PriceBadgeEditor],
 ]) {
   if (!customElements.get(name)) customElements.define(name, cls);
 }
-console.info(`pure-energie-price-card ${VERSION}`);
+console.info(`electricity-price-planner ${VERSION}`);
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "pure-energie-price-card",
-  name: "Pure Energie price card",
+  type: "electricity-price-planner-card",
+  name: "Electricity Price Planner card",
   description: "Hourly electricity prices for today and tomorrow",
   preview: true,
 });
 window.customBadges = window.customBadges || [];
 window.customBadges.push({
-  type: "pure-energie-price-badge",
-  name: "Pure Energie price badge",
+  type: "electricity-price-planner-badge",
+  name: "Electricity Price Planner badge",
   description: "Price now, cheapest hour or block still to come, or the price at a set hour",
   preview: true,
 });

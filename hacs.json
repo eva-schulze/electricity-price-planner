@@ -1,6 +1,6 @@
 {
-  "name": "Pure Energie Price Card",
-  "filename": "pure-energie-price-card.js",
+  "name": "Electricity Price Planner",
+  "filename": "electricity-price-planner.js",
   "render_readme": true,
   "homeassistant": "2024.11.0"
 }
