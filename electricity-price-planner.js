@@ -1,76 +1,20 @@
-// Electricity Price Planner: card and badges for Home Assistant.
-// Draws dynamic electricity prices for today and tomorrow as bars, per hour or
-// per quarter hour. Reads the price list a sensor keeps in its attributes, or
-// asks an integration's action (EnergyZero, easyEnergy, Nord Pool, Tibber).
-// Tested on a real installation with Pure Energie Prices
-// (https://github.com/venraij/hacs-pure-energy-prices); the other formats are
-// recognised from those integrations' code and tested with sample data.
-// No external libraries, no network requests. MIT licence, see LICENSE.
+// Electricity Price Planner: card, badges and usage card for Home Assistant.
+// https://github.com/eva-schulze/electricity-price-planner
 //
-// All settings can be changed in the card editor (Edit dashboard, then the
-// card's pencil), or in YAML:
-//   type: custom:electricity-price-planner-card
-//   entity: sensor.pure_energie_electricity_import
-//   attribute: prices               (optional; normally found automatically.
-//                                    Several: "raw_today, raw_tomorrow")
-//   time_key: start                 (optional, field with the start time; dots
-//                                    for nested fields, e.g. date.full)
-//   price_key: value                (optional, field with the price)
-//   price_unit: auto                (optional: auto, kwh, cent or mwh)
-//   currency: auto                  (optional: auto or a code such as EUR, GBP)
-//   source: attribute               (optional: attribute, energyzero, easyenergy,
-//                                    nordpool or tibber; actions need no entity)
-//   config_entry: <id>              (for energyzero, easyenergy, nordpool)
-//   area: NL                        (nordpool: price area; tibber: home name)
-//   incl_vat: true                  (energyzero, easyenergy)
-//   price_factor: 0.0000001         (optional, YAML only, for unusual units)
-//   show_title: true                (optional, false hides the title)
-//   title: Electricity price        (optional; empty uses the default title in
-//                                    the dashboard's language)
-//   show_summary: true              (optional, false hides the text above the
-//                                    chart; or per line: summary_now,
-//                                    summary_cheapest, summary_block)
-//   show_info: true                 (optional, false hides the price line
-//                                    below the chart)
-//   height: 180                     (optional, chart height in pixels)
-//   fixed_scale: true               (optional, use y_max as the top of the scale)
-//   y_max: 0.40                     (optional, fixed top of the scale in €/kWh;
-//                                    a higher price still stretches the scale)
-//   decimals: 2                     (optional, decimals for prices in the text)
-//   font_size: 14                   (optional, text size in pixels; the chart's
-//                                    labels scale along)
-//   palette: traffic                (optional: traffic, colorblind, grey, custom)
-//   color_low: "#0072b2"            (optional, cheapest colour for palette custom;
-//                                    also [r, g, b])
-//   color_high: "#e69f00"           (optional, most expensive colour for custom)
-//   color_steps: 3                  (optional, 2 to 6 colour bands)
-//   block_hours: 3                  (optional, show the cheapest block of this
-//                                    many consecutive hours; 0 = off)
-//   block_color: "#43a047"          (optional, bracket colour; by default the
-//                                    palette's colour for the cheapest prices)
-//   night_shading: true             (optional, false turns night shading off)
-//   night_start: 22                 (optional, first shaded hour)
-//   night_end: 6                    (optional, last shaded hour, included)
-// Width: in a sections dashboard, use the card's Layout tab.
+// Draws dynamic electricity prices for today and tomorrow as bars, per hour,
+// half hour or quarter hour. Reads the price list a sensor keeps in its
+// attributes, or asks an integration's action (EnergyZero, easyEnergy,
+// Nord Pool, Tibber). Tested on a real installation with Pure Energie Prices;
+// the other formats are recognised from those integrations' code and tested
+// with sample data. No external libraries, no network requests of its own.
+// MIT licence, see LICENSE.
 //
-// The same file also provides a badge for the top of a dashboard view:
-//   type: custom:electricity-price-planner-badge
-//   entity: sensor.pure_energie_electricity_import
-//   show: now                       (now, cheapest, block, at or average)
-//   range: upcoming                 (for cheapest, block and average: upcoming,
-//                                    today, tomorrow or both)
-//   block_hours: 3                  (for show: block)
-//   hour: 6                         (for show: at; the next time it is 06:00,
-//                                    averaged over the hour for quarter hours)
-//   follow_chart: true              (optional; take colours and data settings
-//                                    from a price card on the dashboard; the
-//                                    sensor may then stay empty)
-//   attribute, time_key, price_key, price_unit, currency, source and the
-//   action settings as for the card
-//   name: Washing machine           (optional, replaces the label)
-//   icon: mdi:washing-machine       (optional)
-//   decimals, palette, color_low, color_high, color_steps as for the card;
-//   the icon takes the colour of the price.
+// The file defines three elements:
+//   custom:electricity-price-planner-card        the price chart
+//   custom:electricity-price-planner-badge       one value, such as the price now
+//   custom:electricity-price-planner-usage-card  your use per hour, by price
+// All settings can be changed in their settings forms; the README lists every
+// option with its YAML name and default.
 //
 // Texts follow the Home Assistant language: English, Dutch, German, French or
 // Spanish (others fall back to English). Prices use that language's format.

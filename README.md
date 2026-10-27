@@ -94,6 +94,10 @@ average price you paid, the day's average and the best possible price, and a
 score from 0 to 100 for your timing. Meters with a high and a low tariff are
 added up for you.
 
+![Usage card: use per hour coloured by price, with a score](images/usage.png)
+
+*Usage card with made-up sample use.*
+
 ### For everyone
 
 - English, Dutch, German, French and Spanish, following your Home Assistant
@@ -137,6 +141,10 @@ energy meter in kWh, for example the one in the Energy dashboard.
 All settings are in the settings forms of the card, badge and usage card. The
 tables below list them with their YAML names, in the same order and groups as
 the forms.
+
+On a sections dashboard the price card and the usage card take the full width
+of their section. To make one narrower, drag it smaller or use the card's
+**Layout** tab.
 
 ### Price card
 
@@ -230,7 +238,8 @@ energy_entity:
 | `energy_entity` | *(required)* | One or more energy meters in kWh, for example the ones in the Energy dashboard. Several are added up, such as the high and low tariff (tariff 1 and 2) of a Dutch or Belgian meter. Do not also add a total of them, or use is counted twice. |
 | `show_score` | `true` | The score: 100 = all use in the day's cheapest hour, 0 = all in the most expensive one. |
 | `height` | `160` | Chart height in pixels. |
-| `follow_chart` | `true` | Prices and colours from the price card on the dashboard; switch off to set them on this card. |
+| `follow_chart` | `true` | Prices and colours from the price card on the dashboard. Switch off to set the price sensor, `palette`, `color_steps`, `decimals` and the advanced settings on this card, with the same names as on the price card. |
+| `show_title`, `title` | on, in your language | YAML only: the card title. |
 
 Use the ‹ › arrows on the card to go back to earlier days, as far as your
 recorder's statistics go. For a past day the card takes prices from the price
