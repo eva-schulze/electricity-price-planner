@@ -762,8 +762,9 @@ class PriceChartCard extends HTMLElement {
   }
 
   getGridOptions() {
-    // Sections dashboards: full width by default, resizable down to half.
-    return { columns: 12, min_columns: 6, rows: "auto", min_rows: 4 };
+    // Sections dashboards: the whole width of the section by default (also
+    // when the section is made wider), resizable down to half.
+    return { columns: "full", min_columns: 6, rows: "auto", min_rows: 4 };
   }
 
   _day(d) {
@@ -2276,7 +2277,7 @@ class UsageCard extends HTMLElement {
   }
 
   getGridOptions() {
-    return { columns: 12, min_columns: 6, rows: "auto", min_rows: 4 };
+    return { columns: "full", min_columns: 6, rows: "auto", min_rows: 4 };
   }
 
   set hass(hass) {
