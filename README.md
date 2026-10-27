@@ -124,6 +124,9 @@ energy meter in kWh, for example the one in the Energy dashboard.
 3. Search for **Electricity Price Planner** and download it.
 4. Reload the browser (Ctrl+F5 / Cmd+Shift+R).
 
+From Home Assistant 2026.11, HACS is built in as the Marketplace. Adding your
+own repository works there as well; it needs a GitHub connection.
+
 ### Manual
 
 1. Copy `electricity-price-planner.js` to the `www` folder of your Home
