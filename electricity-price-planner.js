@@ -118,7 +118,9 @@ const TEXTS = {
     great: "great timing",
     good: "good",
     ok: "could be better",
-    noUsage: "No usage data yet.",
+    noUsage: "No usage data for this day.",
+    prevDay: "Previous day",
+    nextDay: "Next day",
     chooseEnergy: "Choose an energy meter in the card settings.",
     todaySoFar: "Today so far",
     yesterday: "Yesterday",
@@ -163,7 +165,9 @@ const TEXTS = {
     great: "uitstekend getimed",
     good: "goed",
     ok: "kan beter",
-    noUsage: "Nog geen verbruiksgegevens.",
+    noUsage: "Geen verbruiksgegevens voor deze dag.",
+    prevDay: "Vorige dag",
+    nextDay: "Volgende dag",
     chooseEnergy: "Kies een energiemeter in de kaartinstellingen.",
     todaySoFar: "Vandaag tot nu",
     yesterday: "Gisteren",
@@ -208,7 +212,9 @@ const TEXTS = {
     great: "sehr gut getimt",
     good: "gut",
     ok: "geht besser",
-    noUsage: "Noch keine Verbrauchsdaten.",
+    noUsage: "Keine Verbrauchsdaten für diesen Tag.",
+    prevDay: "Vorheriger Tag",
+    nextDay: "Nächster Tag",
     chooseEnergy: "Wähle in den Karteneinstellungen einen Energiezähler.",
     todaySoFar: "Heute bisher",
     yesterday: "Gestern",
@@ -253,7 +259,9 @@ const TEXTS = {
     great: "excellent timing",
     good: "bien",
     ok: "peut mieux faire",
-    noUsage: "Pas encore de données de consommation.",
+    noUsage: "Pas de données de consommation pour ce jour.",
+    prevDay: "Jour précédent",
+    nextDay: "Jour suivant",
     chooseEnergy: "Choisissez un compteur d’énergie dans les paramètres de la carte.",
     todaySoFar: "Aujourd’hui jusqu’ici",
     yesterday: "Hier",
@@ -298,7 +306,9 @@ const TEXTS = {
     great: "muy bien elegido",
     good: "bien",
     ok: "mejorable",
-    noUsage: "Aún no hay datos de consumo.",
+    noUsage: "No hay datos de consumo para este día.",
+    prevDay: "Día anterior",
+    nextDay: "Día siguiente",
     chooseEnergy: "Elige un contador de energía en los ajustes de la tarjeta.",
     todaySoFar: "Hoy hasta ahora",
     yesterday: "Ayer",
@@ -1060,8 +1070,7 @@ const EDITOR_TEXTS = {
       block_until: "Finished by (hour)",
       appliance_kwh: "Energy per run",
       appliance_hours: "Duration (hours)",
-      energy_entity: "Energy meter",
-      day: "Day",
+      energy_entity: "Energy meters",
       show_score: "Show score",
       source: "Where the prices come from",
       config_entry: "Integration entry",
@@ -1103,8 +1112,7 @@ const EDITOR_TEXTS = {
       block_window: "For example from 22 until 7: the block must start and finish between 22:00 and 07:00.",
       appliance_kwh: "How much energy one run uses, for example 1 kWh for a washing machine at 40 °C.",
       appliance_hours: "How long one run takes. The badge shows the cost now and at the cheapest start.",
-      energy_entity: "A sensor that counts your electricity use in kWh, for example the one in the Energy dashboard.",
-      day: "Yesterday needs the price sensor's history: it works with sensors, not with actions.",
+      energy_entity: "A sensor that counts your electricity use in kWh, for example the one in the Energy dashboard. Choose several to add them up, for example the high and low tariff (tariff 1 and 2). Do not also add a total of them, or use is counted twice.",
       show_score: "100 = all use in the cheapest hour of the day, 0 = all in the most expensive one.",
       source: "Most integrations keep the prices in the sensor. EnergyZero, easyEnergy, the built-in Nord Pool and Tibber only offer them through an action; choose them here.",
       config_entry: "The set-up integration that is asked for the prices.",
@@ -1133,7 +1141,6 @@ const EDITOR_TEXTS = {
       custom: "Custom",
     },
     modes: { purchase: "Purchase price", feed_in: "Feed-in price" },
-    days: { today: "Today so far", yesterday: "Yesterday" },
     units: { auto: "Automatic", kwh: "Per kWh (for example €/kWh)", cent: "Cents per kWh (ct, p, öre)", mwh: "Per MWh" },
     sources: { attribute: "Sensor (most integrations)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (built-in)", tibber: "Tibber" },
   },
@@ -1159,8 +1166,7 @@ const EDITOR_TEXTS = {
       block_until: "Klaar om (uur)",
       appliance_kwh: "Energie per keer",
       appliance_hours: "Duur (uren)",
-      energy_entity: "Energiemeter",
-      day: "Dag",
+      energy_entity: "Energiemeters",
       show_score: "Score tonen",
       source: "Waar de prijzen vandaan komen",
       config_entry: "Integratie-item",
@@ -1202,8 +1208,7 @@ const EDITOR_TEXTS = {
       block_window: "Bijvoorbeeld van 22 tot 7: het blok moet tussen 22:00 en 07:00 beginnen en klaar zijn.",
       appliance_kwh: "Hoeveel energie één keer gebruikt, bijvoorbeeld 1 kWh voor een wasmachine op 40 °C.",
       appliance_hours: "Hoe lang één keer duurt. De badge toont de kosten nu en bij de goedkoopste start.",
-      energy_entity: "Een sensor die je stroomverbruik in kWh telt, bijvoorbeeld die van het Energie-dashboard.",
-      day: "Gisteren heeft de geschiedenis van de prijssensor nodig: werkt met sensoren, niet met acties.",
+      energy_entity: "Een sensor die je stroomverbruik in kWh telt, bijvoorbeeld die van het Energie-dashboard. Kies er meerdere om ze op te tellen, bijvoorbeeld hoog en laag tarief (tarief 1 en 2). Voeg dan niet ook een totaal daarvan toe, anders telt het verbruik dubbel.",
       show_score: "100 = al het verbruik in het goedkoopste uur van de dag, 0 = alles in het duurste.",
       source: "De meeste integraties houden de prijzen in de sensor bij. EnergyZero, easyEnergy, de ingebouwde Nord Pool en Tibber bieden ze alleen via een actie aan; kies die hier.",
       config_entry: "De ingestelde integratie die om de prijzen wordt gevraagd.",
@@ -1232,7 +1237,6 @@ const EDITOR_TEXTS = {
       custom: "Eigen kleuren",
     },
     modes: { purchase: "Inkoopprijs", feed_in: "Terugleverprijs" },
-    days: { today: "Vandaag tot nu", yesterday: "Gisteren" },
     units: { auto: "Automatisch", kwh: "Per kWh (bijvoorbeeld €/kWh)", cent: "Centen per kWh (ct, p, öre)", mwh: "Per MWh" },
     sources: { attribute: "Sensor (de meeste integraties)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (ingebouwd)", tibber: "Tibber" },
   },
@@ -1259,7 +1263,6 @@ const EDITOR_TEXTS = {
       appliance_kwh: "Energie pro Durchlauf",
       appliance_hours: "Dauer (Stunden)",
       energy_entity: "Energiezähler",
-      day: "Tag",
       show_score: "Punktzahl anzeigen",
       source: "Woher die Preise kommen",
       config_entry: "Integrationseintrag",
@@ -1301,8 +1304,7 @@ const EDITOR_TEXTS = {
       block_window: "Zum Beispiel von 22 bis 7: Der Block muss zwischen 22:00 und 07:00 beginnen und fertig sein.",
       appliance_kwh: "Wie viel Energie ein Durchlauf braucht, zum Beispiel 1 kWh für eine Waschmaschine bei 40 °C.",
       appliance_hours: "Wie lange ein Durchlauf dauert. Das Badge zeigt die Kosten jetzt und beim günstigsten Start.",
-      energy_entity: "Ein Sensor, der deinen Stromverbrauch in kWh zählt, zum Beispiel der aus dem Energie-Dashboard.",
-      day: "Gestern braucht den Verlauf des Preissensors: geht mit Sensoren, nicht mit Aktionen.",
+      energy_entity: "Ein Sensor, der deinen Stromverbrauch in kWh zählt, zum Beispiel der aus dem Energie-Dashboard. Wähle mehrere, um sie zu addieren, zum Beispiel Hoch- und Niedertarif (Tarif 1 und 2). Füge dann nicht zusätzlich eine Summe davon hinzu, sonst zählt der Verbrauch doppelt.",
       show_score: "100 = der ganze Verbrauch in der günstigsten Stunde des Tages, 0 = alles in der teuersten.",
       source: "Die meisten Integrationen halten die Preise im Sensor. EnergyZero, easyEnergy, das eingebaute Nord Pool und Tibber bieten sie nur über eine Aktion an; hier auswählen.",
       config_entry: "Die eingerichtete Integration, die nach den Preisen gefragt wird.",
@@ -1331,7 +1333,6 @@ const EDITOR_TEXTS = {
       custom: "Eigene Farben",
     },
     modes: { purchase: "Bezugspreis", feed_in: "Einspeisepreis" },
-    days: { today: "Heute bisher", yesterday: "Gestern" },
     units: { auto: "Automatisch", kwh: "Pro kWh (zum Beispiel €/kWh)", cent: "Cent pro kWh (ct, p, öre)", mwh: "Pro MWh" },
     sources: { attribute: "Sensor (die meisten Integrationen)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (eingebaut)", tibber: "Tibber" },
   },
@@ -1357,8 +1358,7 @@ const EDITOR_TEXTS = {
       block_until: "Terminé à (heure)",
       appliance_kwh: "Énergie par cycle",
       appliance_hours: "Durée (heures)",
-      energy_entity: "Compteur d’énergie",
-      day: "Jour",
+      energy_entity: "Compteurs d’énergie",
       show_score: "Afficher le score",
       source: "Provenance des prix",
       config_entry: "Entrée de l’intégration",
@@ -1400,8 +1400,7 @@ const EDITOR_TEXTS = {
       block_window: "Par exemple de 22 à 7 : le bloc doit commencer et finir entre 22:00 et 07:00.",
       appliance_kwh: "L’énergie consommée par cycle, par exemple 1 kWh pour un lave-linge à 40 °C.",
       appliance_hours: "La durée d’un cycle. Le badge affiche le coût maintenant et au départ le moins cher.",
-      energy_entity: "Un capteur qui compte votre consommation en kWh, par exemple celui du tableau de bord Énergie.",
-      day: "Hier nécessite l’historique du capteur de prix : fonctionne avec les capteurs, pas avec les actions.",
+      energy_entity: "Un capteur qui compte votre consommation en kWh, par exemple celui du tableau de bord Énergie. Choisissez-en plusieurs pour les additionner, par exemple heures pleines et creuses (tarif 1 et 2). N’ajoutez pas aussi leur total, sinon la consommation compte double.",
       show_score: "100 = toute la consommation à l’heure la moins chère du jour, 0 = tout à la plus chère.",
       source: "La plupart des intégrations gardent les prix dans le capteur. EnergyZero, easyEnergy, Nord Pool intégré et Tibber ne les proposent que via une action ; choisissez-les ici.",
       config_entry: "L’intégration configurée à laquelle les prix sont demandés.",
@@ -1430,7 +1429,6 @@ const EDITOR_TEXTS = {
       custom: "Couleurs personnalisées",
     },
     modes: { purchase: "Prix d’achat", feed_in: "Prix de réinjection" },
-    days: { today: "Aujourd’hui jusqu’ici", yesterday: "Hier" },
     units: { auto: "Automatique", kwh: "Par kWh (par exemple €/kWh)", cent: "Centimes par kWh (ct, p, öre)", mwh: "Par MWh" },
     sources: { attribute: "Capteur (la plupart des intégrations)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (intégré)", tibber: "Tibber" },
   },
@@ -1456,8 +1454,7 @@ const EDITOR_TEXTS = {
       block_until: "Terminado a las (hora)",
       appliance_kwh: "Energía por uso",
       appliance_hours: "Duración (horas)",
-      energy_entity: "Contador de energía",
-      day: "Día",
+      energy_entity: "Contadores de energía",
       show_score: "Mostrar puntuación",
       source: "De dónde vienen los precios",
       config_entry: "Entrada de la integración",
@@ -1499,8 +1496,7 @@ const EDITOR_TEXTS = {
       block_window: "Por ejemplo de 22 a 7: el bloque debe empezar y terminar entre las 22:00 y las 07:00.",
       appliance_kwh: "La energía de un uso, por ejemplo 1 kWh para una lavadora a 40 °C.",
       appliance_hours: "Lo que dura un uso. La insignia muestra el coste ahora y en el inicio más barato.",
-      energy_entity: "Un sensor que cuenta tu consumo de electricidad en kWh, por ejemplo el del panel de Energía.",
-      day: "Ayer necesita el historial del sensor de precio: funciona con sensores, no con acciones.",
+      energy_entity: "Un sensor que cuenta tu consumo de electricidad en kWh, por ejemplo el del panel de Energía. Elige varios para sumarlos, por ejemplo tarifa alta y baja (tarifa 1 y 2). No añadas también su total, o el consumo se cuenta dos veces.",
       show_score: "100 = todo el consumo en la hora más barata del día, 0 = todo en la más cara.",
       source: "La mayoría de las integraciones guardan los precios en el sensor. EnergyZero, easyEnergy, Nord Pool integrado y Tibber solo los ofrecen mediante una acción; elígelos aquí.",
       config_entry: "La integración configurada a la que se piden los precios.",
@@ -1529,7 +1525,6 @@ const EDITOR_TEXTS = {
       custom: "Colores propios",
     },
     modes: { purchase: "Precio de compra", feed_in: "Precio de vertido" },
-    days: { today: "Hoy hasta ahora", yesterday: "Ayer" },
     units: { auto: "Automático", kwh: "Por kWh (por ejemplo €/kWh)", cent: "Céntimos por kWh (ct, p, öre)", mwh: "Por MWh" },
     sources: { attribute: "Sensor (la mayoría de integraciones)", energyzero: "EnergyZero", easyenergy: "easyEnergy", nordpool: "Nord Pool (integrado)", tibber: "Tibber" },
   },
@@ -2254,11 +2249,14 @@ class UsageCard extends HTMLElement {
     const meter = Object.keys(hass.states).find(
       (id) => id.startsWith("sensor.") && hass.states[id].attributes.device_class === "energy"
     );
-    return { energy_entity: meter || "" };
+    return { energy_entity: meter ? [meter] : [] };
   }
 
   setConfig(config) {
-    this._config = { day: "today", show_score: true, height: 160, decimals: 2, ...config };
+    this._config = { show_score: true, height: 160, decimals: 2, ...config };
+    // Days back from today; the arrows on the card change it. The old "day"
+    // option only sets where the card starts.
+    this._offset = this._config.day === "yesterday" ? 1 : 0;
     this._key = null;
     this._statsKey = null;
     this._onPrices = this._onPrices || (() => { this._key = null; if (this._hass) this.hass = this._hass; });
@@ -2285,23 +2283,24 @@ class UsageCard extends HTMLElement {
     this._hass = hass;
     const c = followedSettings(this._config);
     const state = hass.states[c.entity];
-    const key = [state && state.last_updated, Math.floor(Date.now() / 900000), language(hass), this._statsVersion || 0].join("|");
+    const key = [state && state.last_updated, Math.floor(Date.now() / 900000), language(hass), this._statsVersion || 0, this._offset].join("|");
     if (key === this._key) return;
     this._key = key;
     this._render(c, state);
   }
 
-  // Hourly statistics from the recorder: the energy meter's change per hour
-  // and, for yesterday, the price sensor's mean per hour. Fetched again after
-  // 15 minutes.
-  _stats(c, dayStart, dayEnd) {
-    const want = JSON.stringify([c.energy_entity, c.entity, c.day, dayStart.getTime()]);
-    const fresh = this._statsKey === want && Date.now() - this._statsTime < 15 * 60000;
+  // Hourly statistics from the recorder: each energy meter's change per hour
+  // and, for past days, the price sensor's mean per hour. Today is fetched
+  // again after 15 minutes; past days do not change, so they are kept (the
+  // last 14 days looked at).
+  _stats(c, meters, dayStart, dayEnd, today) {
+    const ids = [...meters];
+    if (!today && c.entity && !ACTION_SOURCES[c.source]) ids.push(c.entity);
+    const want = JSON.stringify([ids, dayStart.getTime()]);
+    this._statsCache = this._statsCache || new Map();
+    const hit = this._statsCache.get(want);
+    const fresh = hit && (!today || Date.now() - hit.time < 15 * 60000);
     if (!fresh && !this._statsLoading && this._hass.callWS) {
-      const ids = [c.energy_entity];
-      if (c.day === "yesterday" && c.entity) ids.push(c.entity);
-      this._statsKey = want;
-      this._statsTime = Date.now();
       this._statsLoading = true;
       this._hass
         .callWS({
@@ -2312,11 +2311,21 @@ class UsageCard extends HTMLElement {
           period: "hour",
           types: ["change", "mean"],
         })
-        .then((r) => { this._statsData = r || {}; this._statsError = null; })
+        .then((r) => {
+          this._statsCache.delete(want);
+          this._statsCache.set(want, { time: Date.now(), data: r || {} });
+          if (this._statsCache.size > 14) this._statsCache.delete(this._statsCache.keys().next().value);
+          this._statsError = null;
+        })
         .catch((e) => { this._statsError = (e && e.message) || String(e); })
         .finally(() => { this._statsLoading = false; this._statsVersion = (this._statsVersion || 0) + 1; this._onPrices(); });
     }
-    return this._statsData || {};
+    return hit ? hit.data : {};
+  }
+
+  _step(delta) {
+    this._offset = Math.max((this._offset || 0) + delta, 0);
+    if (this._hass) this.hass = this._hass;
   }
 
   _render(c, state) {
@@ -2325,38 +2334,49 @@ class UsageCard extends HTMLElement {
     const t = TEXTS[lang];
     this._cur = currencyOf(c, state);
     const money = (v) => euro(v, c.decimals, lang, this._cur);
-    const yesterday = c.day === "yesterday";
+    // One meter or several (for example high and low tariff), added up.
+    const meters = [].concat(c.energy_entity || []).filter((id) => typeof id === "string" && id);
+    const offset = this._offset || 0;
+    const today = offset === 0;
     const dayStart = new Date();
     dayStart.setHours(0, 0, 0, 0);
-    if (yesterday) dayStart.setDate(dayStart.getDate() - 1);
+    dayStart.setDate(dayStart.getDate() - offset);
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
     const hours = Math.round((dayEnd - dayStart) / HOUR);
-    const stats = c.energy_entity ? this._stats(c, dayStart, dayEnd) : {};
+    const stats = meters.length ? this._stats(c, meters, dayStart, dayEnd, today) : {};
     const slot = (time) => Math.round((time - dayStart) / HOUR);
 
-    // The price of each hour: today from the price list (quarter hours are
-    // averaged), yesterday from the price sensor's hourly statistics.
+    // The price of each hour: from the price list where it still covers the
+    // day (quarter hours are averaged), otherwise from the price sensor's
+    // hourly statistics.
     const hourPrice = new Map();
-    if (yesterday) {
+    const sums = new Map();
+    for (const p of readPrices(this._hass, state, c, this._onPrices).list) {
+      if (p.t < dayStart || p.t >= dayEnd) continue;
+      const i = Math.floor((p.t - dayStart) / HOUR);
+      const sum = sums.get(i) || [0, 0];
+      sums.set(i, [sum[0] + p.price, sum[1] + 1]);
+    }
+    for (const [i, [sum, n]] of sums) hourPrice.set(i, sum / n);
+    if (!today && c.entity) {
       const factor = unitFactor(c, state);
-      for (const r of stats[c.entity] || []) if (r.mean != null) hourPrice.set(slot(new Date(r.start)), r.mean * factor);
-    } else {
-      const sums = new Map();
-      for (const p of readPrices(this._hass, state, c, this._onPrices).list) {
-        if (p.t < dayStart || p.t >= dayEnd) continue;
-        const i = Math.floor((p.t - dayStart) / HOUR);
-        const sum = sums.get(i) || [0, 0];
-        sums.set(i, [sum[0] + p.price, sum[1] + 1]);
+      for (const r of stats[c.entity] || []) {
+        const i = slot(new Date(r.start));
+        if (r.mean != null && !hourPrice.has(i)) hourPrice.set(i, r.mean * factor);
       }
-      for (const [i, [sum, n]] of sums) hourPrice.set(i, sum / n);
     }
     const usage = new Map();
-    for (const r of stats[c.energy_entity] || []) usage.set(slot(new Date(r.start)), Math.max(Number(r.change) || 0, 0));
+    for (const id of meters) {
+      for (const r of stats[id] || []) {
+        const i = slot(new Date(r.start));
+        usage.set(i, (usage.get(i) || 0) + Math.max(Number(r.change) || 0, 0));
+      }
+    }
 
     // Score: where the average price paid lies between the day's most
     // expensive (0) and cheapest (100) hour. Today only counts hours so far.
-    const lastHour = yesterday ? hours : Math.floor((Date.now() - dayStart) / HOUR) + 1;
+    const lastHour = today ? Math.floor((Date.now() - dayStart) / HOUR) + 1 : hours;
     const known = [...hourPrice.entries()].filter(([i]) => i < lastHour);
     let kwh = 0, cost = 0;
     for (const [i, u] of usage) if (hourPrice.has(i) && i < lastHour) { kwh += u; cost += u * hourPrice.get(i); }
@@ -2366,12 +2386,18 @@ class UsageCard extends HTMLElement {
     const dayAvg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
     const score = paid != null && max > min ? Math.round((100 * (max - paid)) / (max - min)) : null;
 
+    const dayName =
+      offset === 0 ? t.todaySoFar
+      : offset === 1 ? t.yesterday
+      : dayStart.toLocaleDateString(lang, { weekday: "short", day: "numeric", month: "short", year: dayStart.getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+    const nav = `<div class="nav"><button class="step" data-step="1" title="${esc(t.prevDay)}" aria-label="${esc(t.prevDay)}">‹</button><span class="day">${esc(dayName)}</span><button class="step" data-step="-1" title="${esc(t.nextDay)}" aria-label="${esc(t.nextDay)}"${today ? " disabled" : ""}>›</button></div>`;
+
     let body;
-    if (!c.energy_entity) body = `<p class="msg">${t.chooseEnergy}</p>`;
-    else if (this._statsError) body = `<p class="msg">${esc(t.failed(this._statsError))}</p>`;
-    else if (!usage.size) body = `<p class="msg">${this._statsLoading ? t.loading : t.noUsage}</p>`;
+    if (!meters.length) body = `<p class="msg">${t.chooseEnergy}</p>`;
+    else if (this._statsError) body = nav + `<p class="msg">${esc(t.failed(this._statsError))}</p>`;
+    else if (!usage.size) body = nav + `<p class="msg">${this._statsLoading ? t.loading : t.noUsage}</p>`;
     else {
-      let text = `<div class="summary"><span>${yesterday ? t.yesterday : t.todaySoFar}</span>`;
+      let text = nav + `<div class="summary">`;
       if (paid != null) text += `<span>${t.paid} <b>${money(paid)}</b></span>`;
       if (dayAvg != null) text += `<span>${t.dayAvg} ${money(dayAvg)}</span><span>${t.bestPossible} ${money(min)}</span>`;
       text += `</div>`;
@@ -2389,6 +2415,11 @@ class UsageCard extends HTMLElement {
         .wrap { padding: 0 16px 12px; }
         ha-card:not([header]) .wrap { padding-top: 12px; }
         .msg { color: var(--secondary-text-color); margin: 0; }
+        .nav { display: flex; align-items: center; gap: 4px; margin: 0 0 6px -8px; }
+        .day { font-size: 14px; font-weight: 500; min-width: 7em; text-align: center; }
+        .step { background: none; border: none; color: var(--primary-text-color); font: inherit; font-size: 22px; line-height: 1; width: 36px; height: 32px; border-radius: 16px; cursor: pointer; }
+        .step:hover:not(:disabled) { background: var(--secondary-background-color, rgba(127,127,127,.15)); }
+        .step:disabled { color: var(--disabled-text-color, #bdbdbd); cursor: default; }
         .summary { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; color: var(--secondary-text-color); margin-bottom: 6px; }
         .summary b, .score b { color: var(--primary-text-color); font-weight: 500; }
         .score { font-size: 14px; color: var(--secondary-text-color); margin-bottom: 8px; }
@@ -2400,6 +2431,13 @@ class UsageCard extends HTMLElement {
         .nodata { fill: var(--disabled-text-color, #bdbdbd); }
       </style>
       <ha-card${title ? ` header="${esc(title)}"` : ""}><div class="wrap">${body}</div></ha-card>`;
+    if (!this._clicks) {
+      this._clicks = true;
+      this.shadowRoot.addEventListener("click", (e) => {
+        const b = e.target.closest && e.target.closest("button[data-step]");
+        if (b && !b.disabled) this._step(Number(b.dataset.step));
+      });
+    }
   }
 
   _chart(c, hours, hourPrice, usage, lang) {
@@ -2439,7 +2477,6 @@ class UsageCardEditor extends FormEditor {
 
   withDefaults(c) {
     return {
-      day: "today",
       show_score: true,
       height: 160,
       follow_chart: true,
@@ -2449,13 +2486,14 @@ class UsageCardEditor extends FormEditor {
       price_unit: "auto",
       currency: "auto",
       ...c,
+      // Older set-ups have one meter as text; the form wants a list.
+      energy_entity: [].concat(c.energy_entity || []),
     };
   }
 
   schema(tx, c, lang) {
     const schema = [
-      { name: "energy_entity", required: true, selector: { entity: { domain: "sensor", device_class: "energy" } } },
-      { name: "day", selector: choice(tx.days) },
+      { name: "energy_entity", required: true, selector: { entity: { domain: "sensor", device_class: "energy", multiple: true } } },
       { name: "show_score", selector: { boolean: {} } },
       { name: "height", selector: num_(80, 600, 10, "px") },
       { name: "follow_chart", selector: { boolean: {} } },
@@ -2475,6 +2513,7 @@ class UsageCardEditor extends FormEditor {
       if (c.color_low == null) c.color_low = CUSTOM_LOW_RGB;
       if (c.color_high == null) c.color_high = CUSTOM_HIGH_RGB;
     }
+    delete c.day;
     return c;
   }
 }

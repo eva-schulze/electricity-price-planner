@@ -88,10 +88,11 @@ Small badges for the top of a dashboard. Each badge shows one thing:
 
 ### Usage card
 
-Your electricity use per hour, each bar coloured by the price of that hour,
-for today so far or yesterday. Above it: the average price you paid, the
-day's average and the best possible price, and a score from 0 to 100 for your
-timing.
+Your electricity use per hour, each bar coloured by the price of that hour.
+It opens on today; the ‹ › arrows step back through earlier days. Above it: the
+average price you paid, the day's average and the best possible price, and a
+score from 0 to 100 for your timing. Meters with a high and a low tariff are
+added up for you.
 
 ### For everyone
 
@@ -219,16 +220,23 @@ a badge shows a dash; hover over it to read "not known yet".
 
 ```yaml
 type: custom:electricity-price-planner-usage-card
-energy_entity: sensor.electricity_meter_energy
+energy_entity:
+  - sensor.electricity_meter_energy_consumption_tarif_1
+  - sensor.electricity_meter_energy_consumption_tarif_2
 ```
 
 | Option | Default | Description |
 |---|---|---|
-| `energy_entity` | *(required)* | An energy meter in kWh, for example the one in the Energy dashboard. |
-| `day` | `today` | `today` (so far) or `yesterday`. Yesterday uses the price sensor's history, so it works with sensors, not with actions. |
+| `energy_entity` | *(required)* | One or more energy meters in kWh, for example the ones in the Energy dashboard. Several are added up, such as the high and low tariff (tariff 1 and 2) of a Dutch or Belgian meter. Do not also add a total of them, or use is counted twice. |
 | `show_score` | `true` | The score: 100 = all use in the day's cheapest hour, 0 = all in the most expensive one. |
 | `height` | `160` | Chart height in pixels. |
 | `follow_chart` | `true` | Prices and colours from the price card on the dashboard; switch off to set them on this card. |
+
+Use the ‹ › arrows on the card to go back to earlier days, as far as your
+recorder's statistics go. For a past day the card takes prices from the price
+list while it still covers that day, and otherwise from the price sensor's
+history. So past days need a price sensor; with an action as the data source,
+older days show grey bars without prices.
 
 ## Tips and troubleshooting
 
