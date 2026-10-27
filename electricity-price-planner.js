@@ -1023,7 +1023,7 @@ const EDITOR_TEXTS = {
       incl_vat: "Prices including VAT",
       price_unit: "Unit of the prices",
       currency: "Currency",
-      follow_chart: "Same settings as the price card",
+      follow_chart: "Use the price card's colours and settings",
       show_title: "Show title",
       title: "Title",
       show_summary: "Show text above the chart",
@@ -1119,7 +1119,7 @@ const EDITOR_TEXTS = {
       incl_vat: "Prijzen inclusief btw",
       price_unit: "Eenheid van de prijzen",
       currency: "Valuta",
-      follow_chart: "Dezelfde instellingen als de prijskaart",
+      follow_chart: "Kleuren en instellingen van de prijskaart gebruiken",
       show_title: "Titel tonen",
       title: "Titel",
       show_summary: "Tekst boven de grafiek tonen",
@@ -1215,7 +1215,7 @@ const EDITOR_TEXTS = {
       incl_vat: "Preise inklusive MwSt.",
       price_unit: "Einheit der Preise",
       currency: "Währung",
-      follow_chart: "Gleiche Einstellungen wie die Preiskarte",
+      follow_chart: "Farben und Einstellungen der Preiskarte übernehmen",
       show_title: "Titel anzeigen",
       title: "Titel",
       show_summary: "Text über dem Diagramm anzeigen",
@@ -1311,7 +1311,7 @@ const EDITOR_TEXTS = {
       incl_vat: "Prix TVA comprise",
       price_unit: "Unité des prix",
       currency: "Devise",
-      follow_chart: "Mêmes paramètres que la carte de prix",
+      follow_chart: "Reprendre les couleurs et réglages de la carte de prix",
       show_title: "Afficher le titre",
       title: "Titre",
       show_summary: "Afficher le texte au-dessus du graphique",
@@ -1407,7 +1407,7 @@ const EDITOR_TEXTS = {
       incl_vat: "Precios con IVA",
       price_unit: "Unidad de los precios",
       currency: "Moneda",
-      follow_chart: "Mismos ajustes que la tarjeta de precios",
+      follow_chart: "Usar los colores y ajustes de la tarjeta de precios",
       show_title: "Mostrar título",
       title: "Título",
       show_summary: "Mostrar texto encima del gráfico",
@@ -2202,6 +2202,9 @@ class UsageCard extends HTMLElement {
     // Days back from today; the arrows on the card change it. The old "day"
     // option only sets where the card starts.
     this._offset = this._config.day === "yesterday" ? 1 : 0;
+    // Text size in px, as on the price card; the chart's labels scale with it.
+    this._fs = Math.min(Math.max(Number(this._config.font_size) || 14, 10), 24);
+    this._k = this._fs / 14;
     this._key = null;
     this._statsKey = null;
     this._onPrices = this._onPrices || (() => { this._key = null; if (this._hass) this.hass = this._hass; });
@@ -2210,10 +2213,13 @@ class UsageCard extends HTMLElement {
 
   connectedCallback() {
     window.addEventListener("energy-price-settings", this._onPrices);
+    const box = this.shadowRoot && this.shadowRoot.querySelector(".chart");
+    if (box && this._observer) this._observer.observe(box);
   }
 
   disconnectedCallback() {
     window.removeEventListener("energy-price-settings", this._onPrices);
+    if (this._observer) this._observer.disconnect();
   }
 
   getCardSize() {
@@ -2350,7 +2356,8 @@ class UsageCard extends HTMLElement {
         const grade = score >= 75 ? t.great : score >= 50 ? t.good : t.ok;
         text += `<div class="score"><b>${t.score} ${score}/100</b> · ${grade}<div class="meter"><span style="width:${score}%; background:${esc(bandColour(c, 1 - score / 100))}"></span></div></div>`;
       }
-      body = text + `<div class="chart">${this._chart(c, hours, hourPrice, usage, lang)}</div>`;
+      this._chartArgs = [c, hours, hourPrice, usage, lang];
+      body = text + `<div class="chart"></div>`;
     }
 
     const title = c.show_title === false ? "" : (typeof c.title === "string" && c.title.trim()) || t.usageTitle;
@@ -2361,17 +2368,18 @@ class UsageCard extends HTMLElement {
         ha-card:not([header]) .wrap { padding-top: 12px; }
         .msg { color: var(--secondary-text-color); margin: 0; }
         .nav { display: flex; align-items: center; gap: 4px; margin: 0 0 6px -8px; }
-        .day { font-size: 14px; font-weight: 500; min-width: 7em; text-align: center; }
-        .step { background: none; border: none; color: var(--primary-text-color); font: inherit; font-size: 22px; line-height: 1; width: 36px; height: 32px; border-radius: 16px; cursor: pointer; }
+        .day { font-size: ${this._fs}px; font-weight: 500; min-width: 7em; text-align: center; }
+        .step { background: none; border: none; color: var(--primary-text-color); font: inherit; font-size: ${Math.round(22 * this._k)}px; line-height: 1; width: ${Math.round(36 * this._k)}px; height: ${Math.round(32 * this._k)}px; border-radius: ${Math.round(16 * this._k)}px; cursor: pointer; }
         .step:hover:not(:disabled) { background: var(--secondary-background-color, rgba(127,127,127,.15)); }
         .step:disabled { color: var(--disabled-text-color, #bdbdbd); cursor: default; }
-        .summary { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; color: var(--secondary-text-color); margin-bottom: 6px; }
+        .summary { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: ${this._fs}px; color: var(--secondary-text-color); margin-bottom: 6px; }
         .summary b, .score b { color: var(--primary-text-color); font-weight: 500; }
-        .score { font-size: 14px; color: var(--secondary-text-color); margin-bottom: 8px; }
+        .score { font-size: ${this._fs}px; color: var(--secondary-text-color); margin-bottom: 8px; }
         .meter { height: 6px; border-radius: 3px; background: var(--divider-color, rgba(127,127,127,.25)); margin-top: 4px; overflow: hidden; }
         .meter span { display: block; height: 100%; border-radius: 3px; }
-        svg { width: 100%; display: block; }
-        text { fill: var(--secondary-text-color); font-size: 11px; font-family: inherit; }
+        .chart { position: relative; height: ${Math.max(Number(c.height) || 160, 80)}px; }
+        .chart svg { position: absolute; inset: 0; display: block; }
+        text { fill: var(--secondary-text-color); font-size: ${Math.round(11 * this._k * 10) / 10}px; font-family: inherit; }
         .grid { stroke: var(--divider-color, rgba(127,127,127,.3)); }
         .nodata { fill: var(--disabled-text-color, #bdbdbd); }
       </style>
@@ -2383,15 +2391,30 @@ class UsageCard extends HTMLElement {
         if (b && !b.disabled) this._step(Number(b.dataset.step));
       });
     }
+    // The chart is drawn at its real size in pixels, so its labels keep the
+    // same text size however wide the card is; redrawn when the box resizes.
+    const box = this.shadowRoot.querySelector(".chart");
+    if (!this._observer) this._observer = new ResizeObserver(() => this._draw());
+    this._observer.disconnect();
+    if (box) {
+      this._observer.observe(box);
+      this._draw();
+    }
   }
 
-  _chart(c, hours, hourPrice, usage, lang) {
-    const W = 480, H = Math.max(Number(c.height) || 160, 80), L = 34, R = 4, T = 6, B = 18;
+  _draw() {
+    const box = this.shadowRoot && this.shadowRoot.querySelector(".chart");
+    if (!box || !this._chartArgs || box.clientWidth < 20) return;
+    box.innerHTML = this._chart(...this._chartArgs, box.clientWidth, box.clientHeight);
+  }
+
+  _chart(c, hours, hourPrice, usage, lang, W, H) {
+    const k = this._k, L = 34 * k, R = 4, T = 8 * k, B = 18 * k;
     const pw = W - L - R, ph = H - T - B, bw = pw / hours;
     const top = Math.max(...usage.values(), 0.1);
     // kWh lines in steps of 0.1, 0.2, 0.5, 1, 2, 5 … at least 22 px apart.
     const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
-    const step = steps.find((s) => (ph * s) / (Math.ceil(top / s) * s) >= 22) || 100;
+    const step = steps.find((s) => (ph * s) / (Math.ceil(top / s) * s) >= 22 * k) || 100;
     const hi = Math.ceil(top / step) * step;
     const y = (v) => T + ((hi - v) / hi) * ph;
     const prices = [...hourPrice.values()];
@@ -2399,9 +2422,11 @@ class UsageCard extends HTMLElement {
     let svg = "";
     for (let v = 0; v <= hi + 1e-9; v += step) {
       svg += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`;
-      svg += `<text x="${L - 4}" y="${y(v) + 4}" text-anchor="end">${num(v, step < 1 ? 1 : 0, lang)}</text>`;
+      svg += `<text x="${L - 4}" y="${y(v) + 4 * k}" text-anchor="end">${num(v, step < 1 ? 1 : 0, lang)}</text>`;
     }
-    for (let i = 0; i < hours; i += 3) svg += `<text x="${L + i * bw}" y="${H - 3}" text-anchor="middle">${i}</text>`;
+    // Hour labels every 1, 2, 3 or 6 hours, at least about 30 px apart.
+    const every = [1, 2, 3, 6].find((n) => n * bw >= 30 * k) || 6;
+    for (let i = 0; i < hours; i += every) svg += `<text x="${L + i * bw}" y="${H - 4 * k}" text-anchor="middle">${i}</text>`;
     for (const [i, u] of usage) {
       if (i < 0 || i >= hours) continue;
       const p = hourPrice.get(i);
@@ -2411,7 +2436,7 @@ class UsageCard extends HTMLElement {
       const tip = `${String(i).padStart(2, "0")}:00: ${num(u, 2, lang)} kWh${p != null ? ` · ${euro(p, c.decimals, lang, this._cur)}` : ""}`;
       svg += `<rect ${fill ? `style="fill: ${esc(fill)}"` : `class="nodata"`} x="${L + i * bw + 1}" y="${y(u)}" width="${Math.max(bw - 2, 1)}" height="${Math.max(y(0) - y(u), 0.5)}"><title>${esc(tip)}</title></rect>`;
     }
-    return `<svg viewBox="0 0 ${W} ${H}" role="img">${svg}</svg>`;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img">${svg}</svg>`;
   }
 }
 
@@ -2422,8 +2447,10 @@ class UsageCardEditor extends FormEditor {
 
   withDefaults(c) {
     return {
+      show_title: true,
       show_score: true,
       height: 160,
+      font_size: 14,
       follow_chart: true,
       palette: "traffic",
       color_steps: 3,
@@ -2439,10 +2466,15 @@ class UsageCardEditor extends FormEditor {
   schema(tx, c, lang) {
     const schema = [
       { name: "energy_entity", required: true, selector: { entity: { domain: "sensor", device_class: "energy", multiple: true } } },
+      { name: "show_title", selector: { boolean: {} } },
+    ];
+    if (c.show_title !== false) schema.push({ name: "title", selector: { text: {} } });
+    schema.push(
       { name: "show_score", selector: { boolean: {} } },
       { name: "height", selector: num_(80, 600, 10, "px") },
+      { name: "font_size", selector: num_(10, 24, 1, "px") },
       { name: "follow_chart", selector: { boolean: {} } },
-    ];
+    );
     if (c.follow_chart === false) {
       if (!ACTION_SOURCES[c.source]) schema.push({ name: "entity", selector: { entity: { domain: "sensor" } } });
       schema.push({ name: "palette", selector: choice(tx.palettes) });

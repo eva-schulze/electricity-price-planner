@@ -235,11 +235,12 @@ energy_entity:
 
 | Option | Default | Description |
 |---|---|---|
+| `show_title`, `title` | on, in your language | The card title. An empty title uses the default. |
 | `energy_entity` | *(required)* | One or more energy meters in kWh, for example the ones in the Energy dashboard. Several are added up, such as the high and low tariff (tariff 1 and 2) of a Dutch or Belgian meter. Do not also add a total of them, or use is counted twice. |
 | `show_score` | `true` | The score: 100 = all use in the day's cheapest hour, 0 = all in the most expensive one. |
 | `height` | `160` | Chart height in pixels. |
+| `font_size` | `14` | Text size in pixels, 10 to 24. The chart's labels grow and shrink along. |
 | `follow_chart` | `true` | Prices and colours from the price card on the dashboard. Switch off to set the price sensor, `palette`, `color_steps`, `decimals` and the advanced settings on this card, with the same names as on the price card. |
-| `show_title`, `title` | on, in your language | YAML only: the card title. |
 
 Use the ‹ › arrows on the card to go back to earlier days, as far as your
 recorder's statistics go. For a past day the card takes prices from the price
